@@ -1,4 +1,4 @@
-# Reading Duplicate or similar based on threshhold
+# Reading Duplicate or similar based on threshold
 
 The open source metadata reader I found was 
 
