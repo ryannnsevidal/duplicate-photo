@@ -6,8 +6,13 @@ https://pypi.org/project/exif/
 
 The idea is if the threshold is reached, then every other duplicate photo that is within the threshhold besides the base photo to be deleted.
 
+# What the API is looking for
+
+For the method of hashing the metadata, we are using the perceptual hash, utilizing the similar photo structure. Because the photos aren't encrypted, we are going to assume that most of the pictures have similar metrics that can be quantified with a vector matricie.
+
 # High Level Design 
 The workflow of the project is as followed
+
 
 # Work in progress
 Currently working on
