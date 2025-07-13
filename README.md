@@ -13,7 +13,10 @@ For the method of hashing the metadata, we are using the perceptual hash, utiliz
 # High Level Design 
 The workflow of the project is as followed
 
+<<<<<<< HEAD
 ![Google Photos Retrieval](google_photos_retrival.png)
+=======
+>>>>>>> 08d713e (Updated the readme for utilzation of API in use)
 
 # Work in progress
 Currently working on
