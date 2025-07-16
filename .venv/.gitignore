@@ -1,0 +1,51 @@
+# === Python build and cache files ===
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# === Virtual environment ===
+venv/
+.env/
+.env.*
+
+# === System files ===
+.DS_Store
+Thumbs.db
+
+# === IDEs and editors ===
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# === Log and database files ===
+*.log
+*.sqlite3
+*.db
+
+# === Personal photo and scan output folders ===
+photos/
+output/
+scans/
+duplicates/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+
+# === Config or private info files ===
+config.json
+settings.json
+credentials.json
+secrets.json
+
+# === Temporary files ===
+*.tmp
+*.bak
+*.swp
