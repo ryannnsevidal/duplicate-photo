@@ -1,2 +1,0 @@
-This is a sample document used for evaluating duplicate detection.
-It has some text to check and compare.

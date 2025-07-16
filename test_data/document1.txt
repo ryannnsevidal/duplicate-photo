@@ -1,2 +1,0 @@
-This is a sample document used for testing duplicate detection.
-It has some text to hash and compare.
