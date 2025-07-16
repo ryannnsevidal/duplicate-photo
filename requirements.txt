@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pillow
+imagehash
+pandas
+exifread
+python-multipart
