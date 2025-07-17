@@ -5,3 +5,4 @@ imagehash
 pandas
 exifread
 python-multipart
+firebase-admin

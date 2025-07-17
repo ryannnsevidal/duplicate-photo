@@ -49,3 +49,4 @@ secrets.json
 *.tmp
 *.bak
 *.swp
+.devcontainer/
