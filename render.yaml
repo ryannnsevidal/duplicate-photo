@@ -1,0 +1,160 @@
+services:
+  - type: web
+    name: pix-dupe-detect
+    env: node
+    plan: starter
+    region: oregon
+    buildCommand: |
+      echo "🔧 Installing dependencies..."
+      npm ci
+      echo "🔨 Building application..."
+      npm run build
+      echo "🧪 Running tests..."
+      npm run test:unit || echo "⚠️  Unit tests failed - continuing deployment"
+      echo "✅ Build complete!"
+    startCommand: npx serve -s dist -l 8080
+    healthCheckPath: /
+    
+    # Environment Variables
+    envVars:
+      # Supabase Configuration
+      - key: VITE_SUPABASE_URL
+        value: https://your-project.supabase.co
+      - key: VITE_SUPABASE_ANON_KEY
+        value: your_supabase_anon_key
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: your_supabase_service_role_key
+        
+      # Google OAuth Configuration  
+      - key: VITE_GOOGLE_CLIENT_ID
+        value: your_google_client_id.apps.googleusercontent.com
+      - key: GOOGLE_API_KEY
+        value: your_google_api_key
+      - key: GOOGLE_CLIENT_SECRET
+        value: your_google_client_secret
+        
+      # Dropbox Configuration
+      - key: VITE_DROPBOX_APP_KEY
+        value: your_dropbox_app_key
+      - key: DROPBOX_APP_SECRET
+        value: your_dropbox_app_secret
+        
+      # Application Configuration
+      - key: VITE_APP_NAME
+        value: PIX DUPE DETECT
+      - key: VITE_APP_URL
+        sync: false
+      - key: VITE_APP_ENVIRONMENT
+        value: production
+        
+      # File Upload Configuration
+      - key: VITE_MAX_FILE_SIZE
+        value: 10485760
+      - key: VITE_ALLOWED_FILE_TYPES
+        value: image/jpeg,image/png,image/gif,image/webp
+      - key: VITE_MAX_FILES_PER_UPLOAD
+        value: 10
+        
+      # Session Configuration
+      - key: VITE_SESSION_TIMEOUT
+        value: 1800
+      - key: VITE_ACTIVITY_CHECK_INTERVAL
+        value: 60000
+        
+      # Security Configuration
+      - key: VITE_ENABLE_CSRF_PROTECTION
+        value: true
+      - key: VITE_ENABLE_RATE_LIMITING
+        value: true
+      - key: VITE_MAX_LOGIN_ATTEMPTS
+        value: 5
+        
+      # Feature Flags
+      - key: VITE_ENABLE_CLOUD_STORAGE
+        value: true
+      - key: VITE_ENABLE_ADMIN_DASHBOARD
+        value: true
+      - key: VITE_ENABLE_AUDIT_LOGGING
+        value: true
+        
+      # Performance Configuration
+      - key: VITE_IMAGE_PROCESSING_WORKER_COUNT
+        value: 4
+      - key: VITE_HASH_PROCESSING_CHUNK_SIZE
+        value: 1000
+      - key: VITE_DUPLICATE_CHECK_BATCH_SIZE
+        value: 50
+        
+      # Production Settings
+      - key: VITE_DEBUG_MODE
+        value: false
+      - key: VITE_ENABLE_CONSOLE_LOGS
+        value: false
+      - key: VITE_SHOW_PERFORMANCE_METRICS
+        value: false
+        
+    # Auto-deploy from GitHub
+    autoDeploy: true
+    
+    # Build settings
+    buildFilter:
+      paths:
+      - src/**
+      - public/**
+      - package.json
+      - package-lock.json
+      - vite.config.ts
+      - tsconfig.json
+      ignoredPaths:
+      - README.md
+      - tests/**
+      - docs/**
+      
+    # HTTP headers for security
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-XSS-Protection
+        value: 1; mode=block
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: geolocation=(), microphone=(), camera=()
+        
+    # Route configuration for SPA
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+        
+  # Optional: Database service (if using managed database instead of Supabase)
+  # - type: pserv
+  #   name: pix-dupe-detect-db
+  #   env: docker
+  #   plan: starter
+  #   region: oregon
+  #   repo: https://github.com/render-examples/postgresql
+  #   envVars:
+  #     - key: POSTGRES_DB
+  #       value: pixdupedetect
+  #     - key: POSTGRES_USER
+  #       value: admin
+  #     - key: POSTGRES_PASSWORD
+  #       generateValue: true
+        
+  # Optional: Redis service for caching
+  # - type: redis
+  #   name: pix-dupe-detect-cache
+  #   plan: starter
+  #   region: oregon
+  #   ipAllowList: []

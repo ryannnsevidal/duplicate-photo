@@ -1,0 +1,115 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Supabase App",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/pix-dupe-detect-main",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "serverReadyAction": {
+        "pattern": "Local:\\s+(https?://localhost:[0-9]+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "name": "Launch Firebase App",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/Dtddpe-ryan-main/frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "serverReadyAction": {
+        "pattern": "Local:\\s+(https?://localhost:[0-9]+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "name": "Debug FastAPI Backend",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "backend.clean_google_drive_backend:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8010",
+        "--reload"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Debug Enhanced FastAPI",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "Dtddpe-ryan-main.backend.enhanced_app:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8010",
+        "--reload"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/Dtddpe-ryan-main/.env"
+    },
+    {
+      "name": "Debug Python Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "${workspaceFolder}/backend/test_backend.py",
+        "-v"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Debug Setup Script",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/automate_google_drive_demo.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Launch Full Stack",
+      "configurations": [
+        "Launch Supabase App",
+        "Debug FastAPI Backend"
+      ],
+      "stopAll": true
+    },
+    {
+      "name": "Launch Firebase Stack",
+      "configurations": [
+        "Launch Firebase App",
+        "Debug Enhanced FastAPI"
+      ],
+      "stopAll": true
+    }
+  ]
+}

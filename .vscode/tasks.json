@@ -1,0 +1,232 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🚀 Start Supabase App",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "dev"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/pix-dupe-detect-main"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new",
+        "showReuseMessage": false
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Local:",
+          "endsPattern": "ready in"
+        }
+      }
+    },
+    {
+      "label": "🔥 Start Firebase App",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "dev"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/Dtddpe-ryan-main/frontend"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new",
+        "showReuseMessage": false
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Local:",
+          "endsPattern": "ready in"
+        }
+      }
+    },
+    {
+      "label": "🐍 Start FastAPI Backend",
+      "type": "shell",
+      "command": "uvicorn",
+      "args": [
+        "backend.clean_google_drive_backend:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8010",
+        "--reload"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new",
+        "showReuseMessage": false
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Started server process",
+          "endsPattern": "Uvicorn running on"
+        }
+      }
+    },
+    {
+      "label": "🚀 Start All Services",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "🚀 Start Supabase App",
+        "🔥 Start Firebase App",
+        "🐍 Start FastAPI Backend"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "📦 Install All Dependencies",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "install:all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "🧪 Run All Tests",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "test:all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "🏗️ Build All Projects",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "build:all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "🔧 Format Code",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "format"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "📊 Check Supabase Status",
+      "type": "shell",
+      "command": "supabase",
+      "args": [
+        "status"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/pix-dupe-detect-main"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "🔥 Start Firebase Emulators",
+      "type": "shell",
+      "command": "firebase",
+      "args": [
+        "emulators:start"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/Dtddpe-ryan-main"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new",
+        "showReuseMessage": false
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "starting",
+          "endsPattern": "All emulators ready"
+        }
+      }
+    }
+  ]
+}

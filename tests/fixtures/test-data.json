@@ -1,0 +1,61 @@
+{
+  "users": {
+    "demo": {
+      "email": "demo@example.com",
+      "password": "demo123",
+      "role": "user",
+      "name": "Demo User"
+    },
+    "admin": {
+      "email": "admin@example.com", 
+      "password": "admin123",
+      "role": "admin",
+      "name": "Admin User"
+    }
+  },
+  "testFiles": {
+    "validImage": {
+      "name": "test-image.jpg",
+      "mimeType": "image/jpeg",
+      "size": 1024,
+      "content": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI9jU8tHAAAAABJRU5ErkJggg=="
+    },
+    "invalidFile": {
+      "name": "document.pdf",
+      "mimeType": "application/pdf",
+      "size": 2048
+    },
+    "largeFile": {
+      "name": "large-image.jpg",
+      "mimeType": "image/jpeg",
+      "size": 11534336
+    }
+  },
+  "expectedElements": {
+    "landingPage": [
+      "Demo Mode",
+      "Duplicate Photo Detector",
+      "Advanced perceptual hashing technology"
+    ],
+    "authForm": [
+      "Welcome Back",
+      "Continue with Google",
+      "Demo Mode Credentials"
+    ],
+    "dashboard": [
+      "Upload Image for Duplicate Detection",
+      "Cloud Storage",
+      "Browse Files"
+    ],
+    "adminDashboard": [
+      "Admin Dashboard",
+      "Upload History",
+      "User Sessions"
+    ]
+  },
+  "apiEndpoints": {
+    "auth": "/auth/v1/token",
+    "upload": "/api/upload",
+    "duplicate": "/api/duplicate-check"
+  }
+}
