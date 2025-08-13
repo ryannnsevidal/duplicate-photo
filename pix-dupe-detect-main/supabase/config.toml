@@ -1,0 +1,34 @@
+project_id = "gzveopdxovjlqpawgbzq"
+
+[functions.security-manager]
+verify_jwt = true
+
+[functions.enhanced-security-manager]
+verify_jwt = true
+
+[functions.send-email]
+verify_jwt = true
+
+[functions.file-upload-manager]
+verify_jwt = true
+
+[functions.file-processing-manager]
+verify_jwt = false
+
+[functions.upload-handler]
+verify_jwt = false
+
+[functions.dedup-analyzer]
+verify_jwt = false
+
+[functions.cloud-credentials]
+verify_jwt = false
+
+[functions.admin-session-terminator]
+verify_jwt = true
+
+[functions.secure-cloud-import]
+verify_jwt = true
+
+[functions.oauth-handler]
+verify_jwt = true

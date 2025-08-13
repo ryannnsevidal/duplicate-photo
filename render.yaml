@@ -1,0 +1,76 @@
+services:
+  - type: web
+    name: pix-dupe-detect
+    env: static
+    rootDir: pix-dupe-detect-main
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    
+    # Environment Variables (VITE_ prefixed vars are included in build)
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: VITE_E2E_TEST_MODE
+        value: "0"
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      - key: VITE_DROPBOX_APP_KEY
+        sync: false
+      - key: VITE_APP_NAME
+        value: "PIX DUPE DETECT"
+      - key: VITE_APP_ENVIRONMENT
+        value: "production"
+      - key: VITE_MAX_FILE_SIZE
+        value: "10485760"
+      - key: VITE_ALLOWED_FILE_TYPES
+        value: "image/jpeg,image/png,image/gif,image/webp"
+      - key: VITE_MAX_FILES_PER_UPLOAD
+        value: "10"
+      - key: VITE_SESSION_TIMEOUT
+        value: "1800"
+      - key: VITE_ACTIVITY_CHECK_INTERVAL
+        value: "60000"
+      - key: VITE_ENABLE_CSRF_PROTECTION
+        value: "true"
+      - key: VITE_ENABLE_RATE_LIMITING
+        value: "true"
+      - key: VITE_MAX_LOGIN_ATTEMPTS
+        value: "5"
+      - key: VITE_ENABLE_CLOUD_STORAGE
+        value: "true"
+      - key: VITE_ENABLE_ADMIN_DASHBOARD
+        value: "true"
+      - key: VITE_ENABLE_AUDIT_LOGGING
+        value: "true"
+      - key: VITE_DEBUG_MODE
+        value: "false"
+      - key: VITE_ENABLE_CONSOLE_LOGS
+        value: "false"
+        
+    # SPA routing - all routes should serve index.html
+    routes:
+      - type: rewrite
+        source: "/*"
+        destination: "/index.html"
+        
+    # Security headers
+    headers:
+      - path: "/*"
+        name: "X-Content-Type-Options"
+        value: "nosniff"
+      - path: "/*"
+        name: "X-Frame-Options"
+        value: "DENY"
+      - path: "/*"
+        name: "X-XSS-Protection"
+        value: "1; mode=block"
+      - path: "/*"
+        name: "Strict-Transport-Security"
+        value: "max-age=31536000; includeSubDomains"
+      - path: "/*"
+        name: "Referrer-Policy"
+        value: "strict-origin-when-cross-origin"
