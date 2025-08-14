@@ -86,31 +86,36 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
 
       // Load gapi client and picker modules
       await new Promise<void>((resolve) => {
-        window.gapi.load('client:auth2:picker', () => resolve());
+        window.gapi.load('client:picker', () => resolve());
       });
 
-      // Initialize gapi client and auth with Drive scope
-      await window.gapi.client.init({
-        apiKey,
-        clientId,
+      // Use Google Identity Services token client to obtain access token
+      // @ts-ignore
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
         scope: 'https://www.googleapis.com/auth/drive.readonly',
+        callback: (response: any) => {
+          // Token received
+        },
       });
 
-      // Ensure auth2 instance
-      if (!window.gapi.auth2.getAuthInstance()) {
-        await window.gapi.auth2.init({
-          client_id: clientId,
-          scope: 'https://www.googleapis.com/auth/drive.readonly',
-        });
-      }
-
-      // Sign in to get OAuth token
-      await window.gapi.auth2.getAuthInstance().signIn();
-
-      // Retrieve OAuth token for Picker
-      const tokenFromClient = (window.gapi.client as any).getToken?.();
-      const tokenFromAuth = (window.gapi as any).auth?.getToken?.();
-      const oauthToken = tokenFromClient?.access_token || tokenFromAuth?.access_token;
+      const oauthToken: string = await new Promise((resolve, reject) => {
+        try {
+          tokenClient.requestAccessToken({ prompt: 'consent' });
+          // Listen for token on gapi client
+          const check = () => {
+            const tokenObj = (window.gapi.client as any).getToken?.();
+            if (tokenObj?.access_token) {
+              resolve(tokenObj.access_token);
+            } else {
+              setTimeout(check, 100);
+            }
+          };
+          check();
+        } catch (e) {
+          reject(e);
+        }
+      });
 
       if (!oauthToken) {
         throw new Error('Failed to obtain Google OAuth token');
