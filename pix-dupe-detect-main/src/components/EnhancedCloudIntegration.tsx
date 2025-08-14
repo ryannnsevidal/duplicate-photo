@@ -22,6 +22,13 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
   const [loading, setLoading] = useState({ google: false, dropbox: false, photos: false });
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [photosToken, setPhotosToken] = useState<string | null>(null);
+  const [photosBrowserOpen, setPhotosBrowserOpen] = useState(false);
+  const [photosAlbums, setPhotosAlbums] = useState<Array<{ id: string; title: string }>>([]);
+  const [selectedAlbumId, setSelectedAlbumId] = useState<string>('');
+  const [photosItems, setPhotosItems] = useState<Array<{ id: string; filename: string; baseUrl: string; size?: number }>>([]);
+  const [photosNextPageToken, setPhotosNextPageToken] = useState<string | null>(null);
+  const [photosPrevTokens, setPhotosPrevTokens] = useState<string[]>([]);
 
   const loadGooglePicker = useCallback(async () => {
     setLoading(prev => ({ ...prev, google: true }));
@@ -276,47 +283,60 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
       });
 
       console.log('✅ Google Photos token acquired');
+      setPhotosToken(photosToken);
+      setPhotosBrowserOpen(true);
 
-      // Fetch media items (photos only), limited by environment max files
-      const maxCount = Number(import.meta.env.VITE_MAX_FILES_PER_UPLOAD || 50);
-      let collected = 0;
-      let nextPageToken: string | undefined = undefined;
+      // Load initial albums and first page
+      const loadAlbums = async () => {
+        try {
+          const resp = await fetch('https://photoslibrary.googleapis.com/v1/albums?pageSize=50', {
+            headers: { Authorization: `Bearer ${photosToken}` }
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            const albums = (data.albums || []).map((a: any) => ({ id: a.id, title: a.title }));
+            setPhotosAlbums(albums);
+          }
+        } catch (e) {
+          console.warn('Failed to fetch albums', e);
+        }
+      };
 
-      while (collected < maxCount) {
-        const pageSize = Math.min(50, maxCount - collected);
+      const loadPage = async (pageToken?: string, albumId?: string) => {
+        const body: any = {
+          pageSize: 25,
+          pageToken,
+          filters: { mediaTypeFilter: { mediaTypes: ['PHOTO'] } }
+        };
+        if (albumId) {
+          // For album filtering, the Photos API requires albumId at root, not in filters
+          delete body.filters;
+          body.albumId = albumId;
+          body.pageSize = 25;
+          body.pageToken = pageToken;
+        }
         const resp = await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:search', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${photosToken}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            pageSize,
-            pageToken: nextPageToken,
-            filters: { mediaTypeFilter: { mediaTypes: ['PHOTO'] } }
-          })
+          body: JSON.stringify(body)
         });
         if (!resp.ok) throw new Error(`Google Photos API error: ${resp.status}`);
         const data = await resp.json();
-        const items = data.mediaItems || [];
+        const items = (data.mediaItems || []).map((m: any) => ({ id: m.id, filename: m.filename, baseUrl: m.baseUrl, size: Number(m.mediaMetadata?.fileSize) || 0 }));
+        setPhotosItems(items);
+        setPhotosNextPageToken(data.nextPageToken || null);
+      };
 
-        for (const item of items) {
-          const url = `${item.baseUrl}=d`;
-          onFileSelected({
-            name: item.filename || item.id,
-            size: Number(item.mediaMetadata?.fileSize) || 0,
-            downloadUrl: url,
-            source: 'google-photos'
-          });
-          collected += 1;
-          if (collected >= maxCount) break;
-        }
+      await loadAlbums();
+      await loadPage();
 
-        nextPageToken = data.nextPageToken;
-        if (!nextPageToken) break;
-      }
-
-      toast({ title: 'Google Photos', description: `Queued ${collected} photo(s) for upload.` });
+      // Handlers to navigate
+      (loadGooglePhotos as any)._photosHandlers = {
+        loadPage,
+      };
 
     } catch (error: any) {
       console.error('Google Photos import error:', error);
@@ -434,6 +454,49 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
     }
   }, [onFileSelected, toast]);
 
+  const handlePhotosAlbumChange = useCallback(async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newAlbumId = event.target.value;
+    setSelectedAlbumId(newAlbumId);
+    setPhotosPrevTokens([]);
+    setPhotosNextPageToken(null);
+    const handlers = (loadGooglePhotos as any)._photosHandlers;
+    if (photosToken && handlers?.loadPage) {
+      await handlers.loadPage(undefined, newAlbumId || undefined);
+    }
+  }, [photosToken, loadGooglePhotos]);
+
+  const handlePhotosNext = useCallback(async () => {
+    if (!photosNextPageToken) return;
+    setPhotosPrevTokens(prev => [...prev, photosNextPageToken]);
+    const handlers = (loadGooglePhotos as any)._photosHandlers;
+    if (photosToken && handlers?.loadPage) {
+      await handlers.loadPage(photosNextPageToken, selectedAlbumId || undefined);
+    }
+  }, [photosNextPageToken, photosToken, selectedAlbumId, loadGooglePhotos]);
+
+  const handlePhotosPrev = useCallback(async () => {
+    if (photosPrevTokens.length === 0) return;
+    const newPrev = [...photosPrevTokens];
+    const priorToken = newPrev.pop();
+    setPhotosPrevTokens(newPrev);
+    const handlers = (loadGooglePhotos as any)._photosHandlers;
+    if (photosToken && handlers?.loadPage) {
+      await handlers.loadPage(priorToken, selectedAlbumId || undefined);
+    }
+  }, [photosPrevTokens, photosToken, selectedAlbumId, loadGooglePhotos]);
+
+  const handlePhotosAddPage = useCallback(() => {
+    photosItems.forEach(item => {
+      onFileSelected({
+        name: item.filename,
+        size: item.size || 0,
+        downloadUrl: `${item.baseUrl}=d`,
+        source: 'google-photos'
+      });
+    });
+    toast({ title: 'Google Photos', description: `Queued ${photosItems.length} photo(s) for upload.` });
+  }, [photosItems, onFileSelected, toast]);
+
   return (
     <div className="space-y-4">
       {error && (
@@ -504,6 +567,32 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
           </div>
         </Button>
       </div>
+
+      {photosBrowserOpen && (
+        <div className="space-y-3 border rounded p-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Google Photos Browser</span>
+              <Button variant="ghost" onClick={() => setPhotosBrowserOpen(false)}>Close</Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm">Album:</label>
+              <select className="border rounded px-2 py-1" value={selectedAlbumId} onChange={handlePhotosAlbumChange}>
+                <option value="">All Photos</option>
+                {photosAlbums.map(a => (
+                  <option key={a.id} value={a.id}>{a.title}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handlePhotosPrev} disabled={photosPrevTokens.length === 0}>Prev</Button>
+            <Button variant="outline" onClick={handlePhotosNext} disabled={!photosNextPageToken}>Next</Button>
+            <div className="text-sm text-muted-foreground">Showing {photosItems.length} items</div>
+            <Button onClick={handlePhotosAddPage}>Add these items</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
