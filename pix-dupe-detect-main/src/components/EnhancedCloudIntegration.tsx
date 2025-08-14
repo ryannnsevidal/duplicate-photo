@@ -36,18 +36,20 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
 
       console.log('📥 Raw response from cloud-credentials:', { data: credentials, error });
 
-      if (error) {
-        console.error('❌ Supabase function error:', error);
-        throw new Error(`Failed to load Google credentials: ${error.message}`);
+      let clientId = credentials?.client_id as string | undefined;
+      let apiKey = credentials?.api_key as string | undefined;
+
+      if (error || !credentials?.success || !clientId || !apiKey) {
+        console.warn('⚠️ Falling back to VITE_ env vars for Google credentials');
+        clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || clientId;
+        apiKey = import.meta.env.VITE_GOOGLE_API_KEY || apiKey;
       }
 
-      if (!credentials || !credentials.success) {
-        console.error('❌ Invalid credentials response:', credentials);
-        throw new Error(credentials?.error || 'Failed to load Google credentials');
+      if (!clientId || !apiKey) {
+        const message = error?.message || credentials?.error || 'Failed to load Google credentials';
+        throw new Error(message);
       }
 
-      const { client_id: clientId, api_key: apiKey } = credentials;
-      
       console.log('✅ Google credentials loaded:', { clientId: !!clientId, apiKey: !!apiKey });
 
       // Load Google Identity Services (new approach)
@@ -55,6 +57,17 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
           script.src = 'https://accounts.google.com/gsi/client';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      // Also ensure gapi client is available
+      if (!window.gapi) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://apis.google.com/js/api.js';
           script.onload = resolve;
           script.onerror = reject;
           document.head.appendChild(script);
@@ -69,59 +82,61 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
         throw new Error('Google API Key is missing or invalid');
       }
       
-      console.log('🔧 Initializing Google Identity Services...');
-      
-      // Initialize Google Identity Services
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: async (response: any) => {
-          try {
-            // Handle the Google sign-in response
-            const credential = response.credential;
-            
-            // For file picking, we need the older Picker API with Drive scope
-            // Load the Google API for Picker
-            if (!window.gapi) {
-              await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = 'https://apis.google.com/js/api.js';
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-              });
-            }
+      console.log('🔧 Initializing Google APIs and OAuth...');
 
-            await new Promise((resolve) => {
-              window.gapi.load('picker', resolve);
-            });
-
-            // Use the OAuth token for Picker
-            const picker = new window.google.picker.PickerBuilder()
-              .addView(window.google.picker.ViewId.DOCS)
-              .setDeveloperKey(apiKey)
-              .setCallback((data: any) => {
-                if (data.action === window.google.picker.Action.PICKED) {
-                  const file = data.docs[0];
-                  onFileSelected({
-                    name: file.name,
-                    size: file.sizeBytes || 0,
-                    downloadUrl: file.downloadUrl || file.embedUrl,
-                    source: 'google-drive'
-                  });
-                }
-              })
-              .build();
-
-            picker.setVisible(true);
-          } catch (error) {
-            console.error('Google picker error:', error);
-            throw error;
-          }
-        }
+      // Load gapi client and picker modules
+      await new Promise<void>((resolve) => {
+        window.gapi.load('client:auth2:picker', () => resolve());
       });
 
-      // Show the Google sign-in prompt
-      window.google.accounts.id.prompt();
+      // Initialize gapi client and auth with Drive scope
+      await window.gapi.client.init({
+        apiKey,
+        clientId,
+        scope: 'https://www.googleapis.com/auth/drive.readonly',
+      });
+
+      // Ensure auth2 instance
+      if (!window.gapi.auth2.getAuthInstance()) {
+        await window.gapi.auth2.init({
+          client_id: clientId,
+          scope: 'https://www.googleapis.com/auth/drive.readonly',
+        });
+      }
+
+      // Sign in to get OAuth token
+      await window.gapi.auth2.getAuthInstance().signIn();
+
+      // Retrieve OAuth token for Picker
+      const tokenFromClient = (window.gapi.client as any).getToken?.();
+      const tokenFromAuth = (window.gapi as any).auth?.getToken?.();
+      const oauthToken = tokenFromClient?.access_token || tokenFromAuth?.access_token;
+
+      if (!oauthToken) {
+        throw new Error('Failed to obtain Google OAuth token');
+      }
+      
+      console.log('✅ Obtained Google OAuth token');
+
+      // Build and show the Picker with OAuth token
+      const picker = new window.google.picker.PickerBuilder()
+        .addView(window.google.picker.ViewId.DOCS)
+        .setDeveloperKey(apiKey)
+        .setOAuthToken(oauthToken)
+        .setCallback((data: any) => {
+          if (data.action === window.google.picker.Action.PICKED) {
+            const file = data.docs[0];
+            onFileSelected({
+              name: file.name,
+              size: file.sizeBytes || 0,
+              downloadUrl: file.downloadUrl || file.embedUrl,
+              source: 'google-drive'
+            });
+          }
+        })
+        .build();
+
+      picker.setVisible(true);
 
     } catch (error: any) {
       console.error('Google Drive integration error:', error);
@@ -150,18 +165,17 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
 
       console.log('📥 Raw Dropbox response from cloud-credentials:', { data: credentials, error });
 
-      if (error) {
-        console.error('❌ Supabase function error:', error);
-        throw new Error(`Failed to load Dropbox credentials: ${error.message}`);
+      let appKey = credentials?.app_key as string | undefined;
+      if (error || !credentials?.success || !appKey) {
+        console.warn('⚠️ Falling back to VITE_ env var for Dropbox app key');
+        appKey = import.meta.env.VITE_DROPBOX_APP_KEY || appKey;
       }
 
-      if (!credentials || !credentials.success) {
-        console.error('❌ Invalid credentials response:', credentials);
-        throw new Error(credentials?.error || 'Failed to load Dropbox credentials');
+      if (!appKey) {
+        const message = error?.message || credentials?.error || 'Failed to load Dropbox credentials';
+        throw new Error(message);
       }
 
-      const { app_key: appKey } = credentials;
-      
       console.log('✅ Dropbox credentials loaded:', { appKey: !!appKey });
 
       // Validate credentials before use
@@ -171,7 +185,20 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
       
       console.log('🔧 Loading Dropbox with app key:', appKey);
       
-      // Load Dropbox Chooser if not already loaded
+      // Ensure we load dropins.js with the correct app key
+      const existing = document.querySelector('script[src*="dropins.js"]') as HTMLScriptElement | null;
+      if (existing) {
+        const existingKey = existing.getAttribute('data-app-key');
+        if (existingKey !== appKey) {
+          console.warn('🔁 Replacing existing Dropbox script with correct app key');
+          existing.remove();
+          // Reset global to force reload
+          // @ts-ignore
+          window.Dropbox = undefined;
+        }
+      }
+
+      // Load Dropbox Chooser if not already loaded (or after replacement)
       if (!window.Dropbox) {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
