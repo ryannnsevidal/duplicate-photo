@@ -86,7 +86,7 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
 
       // Load gapi client and picker modules
       await new Promise<void>((resolve) => {
-        window.gapi.load('client:picker', () => resolve());
+        window.gapi.load('picker', () => resolve());
       });
 
       // Use Google Identity Services token client to obtain access token
@@ -94,24 +94,29 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'https://www.googleapis.com/auth/drive.readonly',
-        callback: (response: any) => {
-          // Token received
-        },
+        callback: () => {},
       });
 
       const oauthToken: string = await new Promise((resolve, reject) => {
+        let resolved = false;
+        // Replace callback to capture the token directly
+        // @ts-ignore
+        tokenClient.callback = (resp: any) => {
+          if (resp && resp.access_token) {
+            resolved = true;
+            resolve(resp.access_token);
+          } else {
+            reject(new Error('Failed to obtain access token'));
+          }
+        };
         try {
           tokenClient.requestAccessToken({ prompt: 'consent' });
-          // Listen for token on gapi client
-          const check = () => {
-            const tokenObj = (window.gapi.client as any).getToken?.();
-            if (tokenObj?.access_token) {
-              resolve(tokenObj.access_token);
-            } else {
-              setTimeout(check, 100);
+          // Timeout guard
+          setTimeout(() => {
+            if (!resolved) {
+              reject(new Error('Timed out obtaining Google access token'));
             }
-          };
-          check();
+          }, 15000);
         } catch (e) {
           reject(e);
         }
