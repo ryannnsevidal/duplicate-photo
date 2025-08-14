@@ -10,6 +10,7 @@ interface CloudFile {
   size: number;
   downloadUrl: string;
   source: 'google-drive' | 'dropbox';
+  downloadHeaders?: Record<string, string>;
 }
 
 interface EnhancedCloudIntegrationProps {
@@ -106,6 +107,7 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
         // @ts-ignore
         tokenClient.callback = (resp: any) => {
           if (resp && resp.access_token) {
+            try { localStorage.setItem('googleDriveGranted', '1'); } catch {}
             resolved = true;
             resolve(resp.access_token);
           } else {
@@ -113,7 +115,8 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
           }
         };
         try {
-          tokenClient.requestAccessToken({ prompt: 'consent' });
+          const promptMode = (localStorage.getItem('googleDriveGranted') === '1') ? '' : 'consent';
+          tokenClient.requestAccessToken({ prompt: promptMode as any });
           // Timeout guard
           setTimeout(() => {
             if (!resolved) {
@@ -189,12 +192,13 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
             const items = flat.length > 0 ? flat : pickedDocs.map((d: any) => ({ id: d.id, name: d.name, sizeBytes: d.sizeBytes }));
 
             items.forEach((f: any) => {
-              const directUrl = `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&access_token=${oauthToken}`;
+              const directUrl = `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`;
               onFileSelected({
                 name: f.name,
                 size: f.sizeBytes || 0,
                 downloadUrl: directUrl,
-                source: 'google-drive'
+                source: 'google-drive',
+                downloadHeaders: { Authorization: `Bearer ${oauthToken}` }
               });
             });
           }

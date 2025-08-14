@@ -95,7 +95,9 @@ export function SecureFileUpload() {
       ));
 
       // Download file from cloud provider
-      const response = await fetch(cloudFile.downloadUrl);
+      const response = await fetch(cloudFile.downloadUrl, {
+        headers: cloudFile.downloadHeaders || {}
+      });
       if (!response.ok) throw new Error(`Failed to download from ${cloudFile.source}`);
       
       const blob = await response.blob();
@@ -135,11 +137,17 @@ export function SecureFileUpload() {
           user_id: user!.id,
           original_filename: file.name,
           file_size_bytes: file.size,
-          file_type: 'image',
+          file_type: (/^image\//.test(file.type) ? 'image' : (/^application\/pdf$/.test(file.type) ? 'pdf' : (/^application\//.test(file.type) || /^text\//.test(file.type) ? 'doc' : 'other'))),
           cloud_provider: 'other',
           cloud_path: filePath,
           rclone_remote: 'supabase-storage',
-          sha256_hash: `temp_${uploadFile.id}`
+          sha256_hash: `temp_${uploadFile.id}`,
+          upload_status: 'uploaded',
+          upload_timestamp: new Date().toISOString(),
+          metadata: {
+            source: cloudFile.source,
+            type: file.type,
+          }
         });
 
       // Complete upload
