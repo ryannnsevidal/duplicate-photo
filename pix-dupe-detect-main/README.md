@@ -8,8 +8,6 @@
 
 > **Enterprise-grade AI-powered file deduplication platform with advanced security, real-time monitoring, and cloud sync capabilities.**
 
-**Lovable Project URL**: https://lovable.dev/projects/cc8d4952-f69a-4301-b4db-dcc961db860e
-
 ## 🌟 **Key Features**
 
 ### 🔒 **Enterprise Security (100/100 Score)**
