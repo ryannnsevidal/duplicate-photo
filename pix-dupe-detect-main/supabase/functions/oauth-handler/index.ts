@@ -145,7 +145,7 @@ async function exchangeCodeForToken(provider: string, code: string, redirectUri?
     case 'google':
     case 'google-photos':
       const googleClientId = Deno.env.get('GOOGLE_CLIENT_ID');
-      const googleClientSecret = Deno.env.get('GOOGLE_PHOTOS_CLIENT_SECRET');
+      const googleClientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET') ?? Deno.env.get('GOOGLE_PHOTOS_CLIENT_SECRET');
       
       if (!googleClientId || !googleClientSecret) {
         throw new Error('Google OAuth credentials not configured');

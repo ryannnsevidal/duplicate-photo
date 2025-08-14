@@ -32,12 +32,12 @@ export function SecureConfigScript({ recaptchaSiteKey }: SecureConfigScriptProps
     
     const cspDirectives = [
       "default-src 'self'",
-      `script-src 'self' 'nonce-${currentNonce}' https://www.google.com https://www.gstatic.com https://www.googletagmanager.com`,
+      `script-src 'self' 'nonce-${currentNonce}' https://www.google.com https://www.gstatic.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.dropbox.com`,
       `style-src 'self' 'unsafe-inline' 'nonce-${currentNonce}' https://fonts.googleapis.com`,
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://api.ipify.org",
-      "frame-src 'self' https://www.google.com",
+      "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://api.ipify.org https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://apis.google.com https://api.dropboxapi.com https://content.dropboxapi.com",
+      "frame-src 'self' https://www.google.com https://accounts.google.com https://www.dropbox.com",
       "frame-ancestors 'self' https://*.lovable.app http://localhost:3000",
       "object-src 'none'",
       "base-uri 'self'",

@@ -86,31 +86,41 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
 
       // Load gapi client and picker modules
       await new Promise<void>((resolve) => {
-        window.gapi.load('client:auth2:picker', () => resolve());
+        window.gapi.load('picker', () => resolve());
       });
 
-      // Initialize gapi client and auth with Drive scope
-      await window.gapi.client.init({
-        apiKey,
-        clientId,
+      // Use Google Identity Services token client to obtain access token
+      // @ts-ignore
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
         scope: 'https://www.googleapis.com/auth/drive.readonly',
+        callback: () => {},
       });
 
-      // Ensure auth2 instance
-      if (!window.gapi.auth2.getAuthInstance()) {
-        await window.gapi.auth2.init({
-          client_id: clientId,
-          scope: 'https://www.googleapis.com/auth/drive.readonly',
-        });
-      }
-
-      // Sign in to get OAuth token
-      await window.gapi.auth2.getAuthInstance().signIn();
-
-      // Retrieve OAuth token for Picker
-      const tokenFromClient = (window.gapi.client as any).getToken?.();
-      const tokenFromAuth = (window.gapi as any).auth?.getToken?.();
-      const oauthToken = tokenFromClient?.access_token || tokenFromAuth?.access_token;
+      const oauthToken: string = await new Promise((resolve, reject) => {
+        let resolved = false;
+        // Replace callback to capture the token directly
+        // @ts-ignore
+        tokenClient.callback = (resp: any) => {
+          if (resp && resp.access_token) {
+            resolved = true;
+            resolve(resp.access_token);
+          } else {
+            reject(new Error('Failed to obtain access token'));
+          }
+        };
+        try {
+          tokenClient.requestAccessToken({ prompt: 'consent' });
+          // Timeout guard
+          setTimeout(() => {
+            if (!resolved) {
+              reject(new Error('Timed out obtaining Google access token'));
+            }
+          }, 15000);
+        } catch (e) {
+          reject(e);
+        }
+      });
 
       if (!oauthToken) {
         throw new Error('Failed to obtain Google OAuth token');
