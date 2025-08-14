@@ -14,13 +14,10 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
   webServer: process.env.PW_WEB_SERVER
     ? {
-        command: `bash -lc "VITE_E2E_TEST_MODE=1 npm run build && npm run preview -- --port ${PORT}"`,
+        command: `npm run preview -- --port ${PORT}`,
         url: `http://localhost:${PORT}`,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
-        env: {
-          VITE_E2E_TEST_MODE: '1'
-        }
       }
     : undefined,
   use: {

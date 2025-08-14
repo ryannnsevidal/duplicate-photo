@@ -444,3 +444,42 @@ npm run build
 **Built with ❤️ using Lovable, React, TypeScript, and Supabase**
 
 *Enterprise-grade file deduplication made simple, secure, and scalable.*
+
+## How to run (Local Ops)
+
+### Node
+nvm use 20
+
+### Configure env
+cp .env.local.example .env.local
+# Fill VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+
+### Install & Dev
+npm install
+npm run dev
+
+### Unit/Integration
+npm run test
+
+### E2E (headless)
+PW_WEB_SERVER=1 npm run e2e
+
+### Build & Preview
+npm run build
+npm run preview
+
+### Render Static Deploy
+- Root Dir: `pix-dupe-detect-main`
+- Build: `npm ci && npm run build`
+- Publish Dir: `dist`
+- Rewrite: `/* -> /index.html`
+- Env:
+  - NODE_VERSION=20
+  - VITE_SUPABASE_URL=...
+  - VITE_SUPABASE_ANON_KEY=...
+
+## Troubleshooting
+- Missing env at runtime: ensure `.env.local` has VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (and Render envs in prod). Rebuild if changed.
+- 404 on deep links in prod: add rewrite `/* -> /index.html` in Render.
+- Supabase 401: confirm Supabase project URL/key match and Site URL/Redirect URL configured in Supabase.
+- E2E timeouts on selectors: verify `/signin` renders test-ids. Add waits like `await page.waitForSelector('[data-testid="email-input"]')` before interactions.

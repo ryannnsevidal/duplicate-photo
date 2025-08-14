@@ -29,18 +29,20 @@ export function SignInPage() {
         if (data?.role === 'admin') {
           navigate('/admin');
         } else {
-          navigate('/');
+          navigate('/dashboard');
         }
       } catch (error) {
         console.error('Role check error:', error);
-        navigate('/');
+        navigate('/dashboard');
       }
     };
 
     checkRoleAndRedirect();
   }, [user, loading, navigate]);
 
-  const handleAuthSuccess = () => {};
+  const handleAuthSuccess = () => {
+    navigate('/dashboard');
+  };
 
   const handleGoogleSignIn = async () => {
     await signInWithGoogle();
