@@ -36,18 +36,20 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
 
       console.log('📥 Raw response from cloud-credentials:', { data: credentials, error });
 
-      if (error) {
-        console.error('❌ Supabase function error:', error);
-        throw new Error(`Failed to load Google credentials: ${error.message}`);
+      let clientId = credentials?.client_id as string | undefined;
+      let apiKey = credentials?.api_key as string | undefined;
+
+      if (error || !credentials?.success || !clientId || !apiKey) {
+        console.warn('⚠️ Falling back to VITE_ env vars for Google credentials');
+        clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || clientId;
+        apiKey = import.meta.env.VITE_GOOGLE_API_KEY || apiKey;
       }
 
-      if (!credentials || !credentials.success) {
-        console.error('❌ Invalid credentials response:', credentials);
-        throw new Error(credentials?.error || 'Failed to load Google credentials');
+      if (!clientId || !apiKey) {
+        const message = error?.message || credentials?.error || 'Failed to load Google credentials';
+        throw new Error(message);
       }
 
-      const { client_id: clientId, api_key: apiKey } = credentials;
-      
       console.log('✅ Google credentials loaded:', { clientId: !!clientId, apiKey: !!apiKey });
 
       // Load Google Identity Services (new approach)
@@ -150,18 +152,17 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
 
       console.log('📥 Raw Dropbox response from cloud-credentials:', { data: credentials, error });
 
-      if (error) {
-        console.error('❌ Supabase function error:', error);
-        throw new Error(`Failed to load Dropbox credentials: ${error.message}`);
+      let appKey = credentials?.app_key as string | undefined;
+      if (error || !credentials?.success || !appKey) {
+        console.warn('⚠️ Falling back to VITE_ env var for Dropbox app key');
+        appKey = import.meta.env.VITE_DROPBOX_APP_KEY || appKey;
       }
 
-      if (!credentials || !credentials.success) {
-        console.error('❌ Invalid credentials response:', credentials);
-        throw new Error(credentials?.error || 'Failed to load Dropbox credentials');
+      if (!appKey) {
+        const message = error?.message || credentials?.error || 'Failed to load Dropbox credentials';
+        throw new Error(message);
       }
 
-      const { app_key: appKey } = credentials;
-      
       console.log('✅ Dropbox credentials loaded:', { appKey: !!appKey });
 
       // Validate credentials before use

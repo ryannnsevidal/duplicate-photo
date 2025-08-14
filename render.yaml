@@ -18,6 +18,8 @@ services:
         value: "0"
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
+      - key: VITE_GOOGLE_API_KEY
+        sync: false
       - key: VITE_DROPBOX_APP_KEY
         sync: false
       - key: VITE_APP_NAME
