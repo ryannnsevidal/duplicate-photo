@@ -131,6 +131,38 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
       
       console.log('✅ Obtained Google OAuth token');
 
+      // Helper to expand folders into file items
+      const expandGoogleSelection = async (docs: any[], token: string) => {
+        const results: Array<{ id: string; name: string; sizeBytes?: number }> = [];
+        const files: any[] = [];
+
+        for (const d of docs) {
+          const isFolder = d.mimeType === 'application/vnd.google-apps.folder' || d.type === 'folder';
+          if (!isFolder) {
+            results.push({ id: d.id, name: d.name, sizeBytes: d.sizeBytes });
+            continue;
+          }
+
+          // List child files of the selected folder (non-trashed)
+          try {
+            const listUrl = `https://www.googleapis.com/drive/v3/files?q='${encodeURIComponent(d.id)}'+in+parents+and+trashed=false&fields=files(id,name,size,mimeType)`;
+            const resp = await fetch(listUrl, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (resp.ok) {
+              const data = await resp.json();
+              (data.files || []).forEach((f: any) => {
+                results.push({ id: f.id, name: f.name, sizeBytes: Number(f.size) || 0 });
+              });
+            }
+          } catch (e) {
+            console.warn('Failed to list folder contents:', e);
+          }
+        }
+
+        return results;
+      };
+
       // Build and show the Picker with OAuth token
       const docsView = new window.google.picker.DocsView()
         .setIncludeFolders(true)
@@ -145,17 +177,23 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
         .enableFeature(window.google.picker.Feature.SIMPLE_UPLOAD_ENABLED)
         .setDeveloperKey(apiKey)
         .setOAuthToken(oauthToken)
-        .setCallback((data: any) => {
+        .setCallback(async (data: any) => {
           // Remove OAuth popup marker and resume session timeout
           document.body.removeAttribute('data-oauth-popup');
 
           if (data.action === window.google.picker.Action.PICKED) {
-            const files = data.docs || [];
-            files.forEach((file: any) => {
+            const pickedDocs = data.docs || [];
+            // Expand folders into files
+            const flat = await expandGoogleSelection(pickedDocs, oauthToken);
+            // If no folders, fall back to docs directly
+            const items = flat.length > 0 ? flat : pickedDocs.map((d: any) => ({ id: d.id, name: d.name, sizeBytes: d.sizeBytes }));
+
+            items.forEach((f: any) => {
+              const directUrl = `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&access_token=${oauthToken}`;
               onFileSelected({
-                name: file.name,
-                size: file.sizeBytes || 0,
-                downloadUrl: file.downloadUrl || file.embedUrl,
+                name: f.name,
+                size: f.sizeBytes || 0,
+                downloadUrl: directUrl,
                 source: 'google-drive'
               });
             });
