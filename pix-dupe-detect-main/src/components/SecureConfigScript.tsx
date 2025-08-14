@@ -36,7 +36,7 @@ export function SecureConfigScript({ recaptchaSiteKey }: SecureConfigScriptProps
       `style-src 'self' 'unsafe-inline' 'nonce-${currentNonce}' https://fonts.googleapis.com`,
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://api.ipify.org https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://apis.google.com https://api.dropboxapi.com https://content.dropboxapi.com",
+      "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://api.ipify.org https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://photoslibrary.googleapis.com https://apis.google.com https://api.dropboxapi.com https://content.dropboxapi.com",
       "frame-src 'self' https://www.google.com https://accounts.google.com https://www.dropbox.com",
       "frame-ancestors 'self' https://*.lovable.app http://localhost:3000",
       "object-src 'none'",
