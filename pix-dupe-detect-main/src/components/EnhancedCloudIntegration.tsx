@@ -9,7 +9,7 @@ interface CloudFile {
   name: string;
   size: number;
   downloadUrl: string;
-  source: 'google-drive' | 'dropbox';
+  source: 'google-drive' | 'dropbox' | 'google-photos';
   downloadHeaders?: Record<string, string>;
 }
 
@@ -19,7 +19,7 @@ interface EnhancedCloudIntegrationProps {
 }
 
 export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedCloudIntegrationProps) {
-  const [loading, setLoading] = useState({ google: false, dropbox: false });
+  const [loading, setLoading] = useState({ google: false, dropbox: false, photos: false });
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -220,6 +220,114 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
     }
   }, [onFileSelected, toast]);
 
+  const loadGooglePhotos = useCallback(async () => {
+    setLoading(prev => ({ ...prev, photos: true }));
+    setError(null);
+
+    try {
+      console.log('🔄 Starting Google Photos import...');
+      // Ensure GIS and gapi loaded
+      if (!window.google?.accounts) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://accounts.google.com/gsi/client';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      document.body.setAttribute('data-oauth-popup', 'google-photos');
+
+      // Get clientId (use same as Drive)
+      const { data: credentials } = await supabase.functions.invoke('cloud-credentials', {
+        body: { action: 'get_google_credentials' }
+      });
+      const clientId = credentials?.client_id || import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!clientId) throw new Error('Missing Google Client ID');
+
+      // Acquire token for Google Photos Library API
+      // @ts-ignore
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/photoslibrary.readonly',
+        callback: () => {},
+      });
+
+      const photosToken: string = await new Promise((resolve, reject) => {
+        let resolved = false;
+        // @ts-ignore
+        tokenClient.callback = (resp: any) => {
+          if (resp && resp.access_token) {
+            try { localStorage.setItem('googlePhotosGranted', '1'); } catch {}
+            resolved = true;
+            resolve(resp.access_token);
+          } else {
+            reject(new Error('Failed to obtain Google Photos access token'));
+          }
+        };
+        try {
+          const promptMode = (localStorage.getItem('googlePhotosGranted') === '1') ? '' : 'consent';
+          tokenClient.requestAccessToken({ prompt: promptMode as any });
+          setTimeout(() => { if (!resolved) reject(new Error('Timed out obtaining Google Photos token')); }, 15000);
+        } catch (e) {
+          reject(e);
+        }
+      });
+
+      console.log('✅ Google Photos token acquired');
+
+      // Fetch media items (photos only), limited by environment max files
+      const maxCount = Number(import.meta.env.VITE_MAX_FILES_PER_UPLOAD || 50);
+      let collected = 0;
+      let nextPageToken: string | undefined = undefined;
+
+      while (collected < maxCount) {
+        const pageSize = Math.min(50, maxCount - collected);
+        const resp = await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:search', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${photosToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            pageSize,
+            pageToken: nextPageToken,
+            filters: { mediaTypeFilter: { mediaTypes: ['PHOTO'] } }
+          })
+        });
+        if (!resp.ok) throw new Error(`Google Photos API error: ${resp.status}`);
+        const data = await resp.json();
+        const items = data.mediaItems || [];
+
+        for (const item of items) {
+          const url = `${item.baseUrl}=d`;
+          onFileSelected({
+            name: item.filename || item.id,
+            size: Number(item.mediaMetadata?.fileSize) || 0,
+            downloadUrl: url,
+            source: 'google-photos'
+          });
+          collected += 1;
+          if (collected >= maxCount) break;
+        }
+
+        nextPageToken = data.nextPageToken;
+        if (!nextPageToken) break;
+      }
+
+      toast({ title: 'Google Photos', description: `Queued ${collected} photo(s) for upload.` });
+
+    } catch (error: any) {
+      console.error('Google Photos import error:', error);
+      setError('Failed to import from Google Photos. Please try again.');
+      toast({ title: 'Google Photos Error', description: error.message || 'Import failed', variant: 'destructive' });
+    } finally {
+      document.body.removeAttribute('data-oauth-popup');
+      setLoading(prev => ({ ...prev, photos: false }));
+    }
+  }, [onFileSelected, toast]);
+
   const loadDropboxChooser = useCallback(async () => {
     setLoading(prev => ({ ...prev, dropbox: true }));
     setError(null);
@@ -372,6 +480,26 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
             <div className="font-semibold">Dropbox</div>
             <div className="text-sm text-muted-foreground">
               Select files from your Dropbox
+            </div>
+          </div>
+        </Button>
+
+        {/* Google Photos */}
+        <Button
+          onClick={loadGooglePhotos}
+          disabled={disabled || loading.photos}
+          variant="outline"
+          className="h-auto p-6 flex flex-col items-center gap-3"
+        >
+          {loading.photos ? (
+            <Loader2 className="h-8 w-8 animate-spin" />
+          ) : (
+            <CloudIcon className="h-8 w-8 text-pink-600" />
+          )}
+          <div className="text-center">
+            <div className="font-semibold">Google Photos</div>
+            <div className="text-sm text-muted-foreground">
+              Import photos from your Google Photos
             </div>
           </div>
         </Button>
