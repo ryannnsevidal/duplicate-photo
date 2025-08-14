@@ -104,6 +104,7 @@ This application is production-ready and can be deployed to Render as a static s
 | `VITE_SUPABASE_URL` | ✅ | Your Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | ✅ | Supabase anonymous key (safe for client) |
 | `VITE_GOOGLE_CLIENT_ID` | 🔧 | Google OAuth client ID |
+| `VITE_GOOGLE_API_KEY` | 🔧 | Google API key (Picker/Drive) |
 | `VITE_DROPBOX_APP_KEY` | 🔧 | Dropbox app key for cloud sync |
 | `VITE_E2E_TEST_MODE` | ❌ | Set to `0` in production (default) |
 | `VITE_APP_ENVIRONMENT` | ❌ | Set to `production` |
@@ -483,3 +484,44 @@ npm run preview
 - 404 on deep links in prod: add rewrite `/* -> /index.html` in Render.
 - Supabase 401: confirm Supabase project URL/key match and Site URL/Redirect URL configured in Supabase.
 - E2E timeouts on selectors: verify `/signin` renders test-ids. Add waits like `await page.waitForSelector('[data-testid="email-input"]')` before interactions.
+
+## 🧭 High‑Level Architecture
+
+```
+[Browser (React/Vite)]
+  ├─ Uploads (local) → Supabase Storage (bucket: uploads)
+  ├─ Cloud import
+  │   ├─ Google Drive (Google Picker + GIS token client → direct download via Authorization)
+  │   ├─ Google Photos (Photos Library API: albums, pagination, page add)
+  │   └─ Dropbox Chooser (domain-allowed)
+  ├─ Writes metadata → Postgres table `file_upload_logs`
+  ├─ Triggers analysis → Edge Function `dedup-analyzer`
+  └─ Admin dashboard → queries RLS-protected tables
+
+[Supabase]
+  ├─ Auth (PKCE)
+  ├─ Postgres (RLS policies)
+  ├─ Storage (uploads)
+  └─ Edge Functions
+      ├─ cloud-credentials (returns Google/Dropbox public creds)
+      ├─ oauth-handler (optional token exchanges)
+      └─ dedup-analyzer (simulated dedupe in this build)
+
+[External APIs]
+  ├─ Google OAuth/Picker/Drive/Photos
+  └─ Dropbox Drop-ins
+```
+
+### OAuth & API Keys (prod checklist)
+- Google Cloud Console
+  - Enable: Drive API, Picker API, Photos Library API
+  - OAuth Client (Web): Authorized JavaScript origins → your Render domain(s) and localhost
+  - Consent screen: add Test users if not published; add scopes:
+    - `https://www.googleapis.com/auth/drive.readonly`
+    - `https://www.googleapis.com/auth/photoslibrary.readonly`
+  - API key: restrict to your domains, allow Drive + Picker
+- Dropbox App Console
+  - Chooser/Saver/Embedder domains: add your domains (no protocol)
+- Supabase (Edge Function secrets)
+  - `GOOGLE_CLIENT_ID`, `GOOGLE_API_KEY`, `DROPBOX_APP_KEY`
+  - Optional: `GOOGLE_CLIENT_SECRET`, `DROPBOX_APP_SECRET`
