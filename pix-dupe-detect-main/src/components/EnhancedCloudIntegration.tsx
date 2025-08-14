@@ -84,6 +84,9 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
       
       console.log('🔧 Initializing Google APIs and OAuth...');
 
+      // Mark OAuth popup start to prevent session timeout
+      document.body.setAttribute('data-oauth-popup', 'google');
+
       // Load gapi client and picker modules
       await new Promise<void>((resolve) => {
         window.gapi.load('picker', () => resolve());
@@ -129,18 +132,32 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
       console.log('✅ Obtained Google OAuth token');
 
       // Build and show the Picker with OAuth token
+      const docsView = new window.google.picker.DocsView()
+        .setIncludeFolders(true)
+        .setSelectFolderEnabled(true);
+
       const picker = new window.google.picker.PickerBuilder()
+        .addView(docsView)
         .addView(window.google.picker.ViewId.DOCS)
+        .addView(window.google.picker.ViewId.DOCS_IMAGES)
+        .addView(window.google.picker.ViewId.DOCS_VIDEOS)
+        .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
+        .enableFeature(window.google.picker.Feature.SIMPLE_UPLOAD_ENABLED)
         .setDeveloperKey(apiKey)
         .setOAuthToken(oauthToken)
         .setCallback((data: any) => {
+          // Remove OAuth popup marker and resume session timeout
+          document.body.removeAttribute('data-oauth-popup');
+
           if (data.action === window.google.picker.Action.PICKED) {
-            const file = data.docs[0];
-            onFileSelected({
-              name: file.name,
-              size: file.sizeBytes || 0,
-              downloadUrl: file.downloadUrl || file.embedUrl,
-              source: 'google-drive'
+            const files = data.docs || [];
+            files.forEach((file: any) => {
+              onFileSelected({
+                name: file.name,
+                size: file.sizeBytes || 0,
+                downloadUrl: file.downloadUrl || file.embedUrl,
+                source: 'google-drive'
+              });
             });
           }
         })
@@ -227,8 +244,12 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
 
       // Open Dropbox Chooser with app key validation
       console.log('🔧 Opening Dropbox chooser...');
+      // Mark OAuth popup start to prevent session timeout
+      document.body.setAttribute('data-oauth-popup', 'dropbox');
       window.Dropbox.choose({
         success: (files: any[]) => {
+          // Remove OAuth popup marker and resume session timeout
+          document.body.removeAttribute('data-oauth-popup');
           console.log('✅ Dropbox files selected:', files.length);
           files.forEach(file => {
             onFileSelected({
@@ -240,11 +261,13 @@ export function EnhancedCloudIntegration({ onFileSelected, disabled }: EnhancedC
           });
         },
         cancel: () => {
+          // Remove OAuth popup marker and resume session timeout
+          document.body.removeAttribute('data-oauth-popup');
           console.log('❌ Dropbox chooser cancelled');
         },
         linkType: 'direct',
         multiselect: true,
-        extensions: ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.txt', '.doc', '.docx'],
+        // Allow any file type by omitting extensions filter
         folderselect: false,
       });
 

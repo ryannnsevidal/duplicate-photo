@@ -47,11 +47,25 @@ export function useSessionTimeout(timeoutMinutes: number = 30) {
 
     if (!user) return;
 
+    // Helper to detect OAuth/picker state
+    const oauthInProgress = () => (
+      document.body.hasAttribute('data-oauth-popup') ||
+      window.location.search.includes('code=') ||
+      window.location.search.includes('oauth') ||
+      document.title.includes('Google') ||
+      document.title.includes('Dropbox')
+    );
+
     // Show warning modal at 5 minutes before timeout
     const warningTime = (timeoutMinutes - 5) * 60 * 1000;
     if (warningTime > 0) {
       warningTimeoutRef.current = setTimeout(() => {
         if (user && !warningShownRef.current && Date.now() - activityRef.current >= warningTime) {
+          // Skip warning while OAuth/picker is active; postpone check
+          if (oauthInProgress()) {
+            warningTimeoutRef.current = setTimeout(() => resetTimeout(), 60 * 1000);
+            return;
+          }
           warningShownRef.current = true;
           setShowWarningModal(true);
           setTimeRemaining(300); // 5 minutes in seconds
@@ -60,6 +74,10 @@ export function useSessionTimeout(timeoutMinutes: number = 30) {
           const startCountdown = () => {
             let remaining = 300;
             const countdown = setInterval(() => {
+              // Pause countdown if OAuth/picker is active
+              if (oauthInProgress()) {
+                return;
+              }
               remaining -= 1;
               setTimeRemaining(remaining);
               
@@ -80,14 +98,30 @@ export function useSessionTimeout(timeoutMinutes: number = 30) {
 
     // Set main timeout
     timeoutRef.current = setTimeout(() => {
-      if (user && Date.now() - activityRef.current >= timeoutMinutes * 60 * 1000) {
-        console.warn('⏰ Auto logout due to inactivity');
-        toast({
-          title: "Session Expired",
-          description: "You have been automatically logged out due to inactivity.",
-          variant: "destructive",
-        });
-        signOut();
+      if (user) {
+        // Do not log out while OAuth/picker is active; postpone check
+        const oauthActive = (
+          document.body.hasAttribute('data-oauth-popup') ||
+          window.location.search.includes('code=') ||
+          window.location.search.includes('oauth') ||
+          document.title.includes('Google') ||
+          document.title.includes('Dropbox')
+        );
+        if (oauthActive) {
+          // Re-schedule a short check in 60s
+          timeoutRef.current = setTimeout(() => resetTimeout(), 60 * 1000);
+          return;
+        }
+        
+        if (Date.now() - activityRef.current >= timeoutMinutes * 60 * 1000) {
+          console.warn('⏰ Auto logout due to inactivity');
+          toast({
+            title: "Session Expired",
+            description: "You have been automatically logged out due to inactivity.",
+            variant: "destructive",
+          });
+          signOut();
+        }
       }
     }, timeoutMinutes * 60 * 1000);
   }, [user, timeoutMinutes, toast, signOut, handleLogout]);
