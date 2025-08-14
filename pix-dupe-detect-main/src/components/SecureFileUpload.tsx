@@ -30,7 +30,7 @@ interface UploadedFile {
   uploadedAt: string;
   status: 'pending' | 'uploading' | 'uploaded' | 'error';
   progress: number;
-  source: 'local' | 'google-drive' | 'dropbox';
+  source: 'local' | 'google-drive' | 'dropbox' | 'google-photos';
   file?: File;
   url?: string;
   error?: string;
@@ -89,6 +89,16 @@ export function SecureFileUpload() {
     setUploading(true);
     
     try {
+      // Ensure authenticated user is available
+      let authUser = user;
+      if (!authUser) {
+        const { data } = await supabase.auth.getUser();
+        authUser = data.user as any;
+      }
+      if (!authUser) {
+        throw new Error('Please sign in again to upload from cloud providers.');
+      }
+
       // Update status to uploading
       setFiles(prev => prev.map(f => 
         f.id === uploadFile.id ? { ...f, status: 'uploading', progress: 25 } : f
@@ -108,8 +118,9 @@ export function SecureFileUpload() {
       ));
 
       // Upload to Supabase storage
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user!.id}/${uploadFile.id}.${fileExt}`;
+      const nameParts = file.name.split('.');
+      const fileExt = nameParts.length > 1 ? nameParts.pop() : 'bin';
+      const filePath = `${authUser.id}/${uploadFile.id}.${fileExt}`;
 
       const { error } = await supabase.storage
         .from('uploads')
@@ -118,7 +129,7 @@ export function SecureFileUpload() {
           upsert: false,
           metadata: {
             originalName: file.name,
-            uploadedBy: user!.id,
+            uploadedBy: authUser.id,
             uploadedAt: new Date().toISOString(),
             source: cloudFile.source
           }
@@ -134,7 +145,7 @@ export function SecureFileUpload() {
       await supabase
         .from('file_upload_logs')
         .insert({
-          user_id: user!.id,
+          user_id: authUser.id,
           original_filename: file.name,
           file_size_bytes: file.size,
           file_type: (/^image\//.test(file.type) ? 'image' : (/^application\/pdf$/.test(file.type) ? 'pdf' : (/^application\//.test(file.type) || /^text\//.test(file.type) ? 'doc' : 'other'))),
