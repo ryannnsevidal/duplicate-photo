@@ -42,8 +42,10 @@ export async function perceptualHash(input: Blob | ArrayBuffer | Buffer): Promis
   }
   
   // Blob path (browser File API)
-  if (input instanceof Blob) {
-    const arrayBuffer = await input.arrayBuffer();
+  if (typeof Blob !== 'undefined' && input instanceof Blob) {
+    const arrayBuffer = typeof (input as any).arrayBuffer === 'function'
+      ? await (input as any).arrayBuffer()
+      : await new Response(input as any).arrayBuffer();
     return simpleAverageHashFromBuffer(arrayBuffer);
   }
   

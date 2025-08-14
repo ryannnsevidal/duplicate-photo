@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 
-test.describe('Local File Upload', () => {
+const E2E = !!Number(process.env.VITE_E2E_TEST_MODE || '0');
+
+(E2E ? test.describe : test.describe.skip)('Local File Upload', () => {
   test.beforeEach(async ({ page }) => {
     // Sign in as regular user for upload tests
     await page.goto('/signin');

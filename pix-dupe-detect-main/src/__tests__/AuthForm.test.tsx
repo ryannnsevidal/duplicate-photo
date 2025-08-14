@@ -10,7 +10,17 @@ vi.mock('@/hooks/use-toast', () => ({
   }),
 }));
 
-// Mock supabase client
+// Mock supabase client (current path used by components)
+vi.mock('@/lib/supabaseClient', () => ({
+  supabase: {
+    auth: {
+      signUp: vi.fn(),
+      signInWithPassword: vi.fn(),
+    },
+  },
+}));
+
+// Keep compatibility mock in case other components import the integrations client
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: {
@@ -34,11 +44,11 @@ describe('AuthForm', () => {
 
     await user.type(screen.getByLabelText(/email/i), 'not-an-email');
     await user.type(screen.getByLabelText(/password/i), 'password123');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.click(screen.getByTestId('auth-submit'));
 
     const error = await screen.findByTestId('email-error');
     expect(error).toBeInTheDocument();
-    expect(error).toHaveTextContent(/valid email/i);
+    expect(error.textContent || '').toMatch(/valid email/i);
     expect(mockOnAuthSuccess).not.toHaveBeenCalled();
   });
 
@@ -62,7 +72,7 @@ describe('AuthForm', () => {
     // First submit with invalid email
     await user.type(screen.getByLabelText(/email/i), 'invalid');
     await user.type(screen.getByLabelText(/password/i), 'password123');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.click(screen.getByTestId('auth-submit'));
 
     // Error should be shown
     await screen.findByTestId('email-error');
@@ -70,7 +80,7 @@ describe('AuthForm', () => {
     // Clear and enter valid email
     await user.clear(screen.getByLabelText(/email/i));
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.click(screen.getByTestId('auth-submit'));
 
     // Error should be cleared
     expect(screen.queryByTestId('email-error')).not.toBeInTheDocument();

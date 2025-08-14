@@ -13,7 +13,7 @@ test.describe('Authentication Validation @smoke', () => {
     
     // Wait for error to appear
     await expect(page.getByTestId('email-error')).toBeVisible();
-    await expect(page.getByTestId('email-error')).toContainText('Invalid email address');
+    await expect(page.getByTestId('email-error')).toContainText('valid email');
   });
 
   test('should clear email error when valid email is entered', async ({ page }) => {

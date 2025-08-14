@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
+import { signInWithPassword as supaSignIn } from '@/lib/auth';
 
 interface AuthFormProps {
   onAuthSuccess: () => void;
@@ -16,57 +16,37 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailError, setEmailError] = useState<string>('');
+  const [authError, setAuthError] = useState<string>('');
   const { toast } = useToast();
 
   const validateEmail = (v: string) => {
-    // Simple RFC-ish check; keep deterministic for tests
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Set error synchronously for tests
+
     if (!validateEmail(email)) {
       setEmailError('Please enter a valid email address.');
       return;
     }
     setEmailError('');
-    
+    setAuthError('');
     setIsLoading(true);
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`
-          }
-        });
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Sign up successful!",
-          description: "Please check your email to confirm your account.",
-        });
+        // Optional: could add signUp here later; keep minimal now.
+        toast({ title: 'Sign up not enabled', description: 'Please use an existing test account.', variant: 'destructive' });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        
-        if (error) throw error;
-        
+        const { error } = await supaSignIn(email, password);
+        if (error) {
+          setAuthError(error.message || 'Authentication failed');
+          toast({ title: 'Authentication failed', description: error.message, variant: 'destructive' });
+          return;
+        }
         onAuthSuccess();
       }
-    } catch (error: any) {
-      toast({
-        title: "Authentication failed",
-        description: error.message,
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +66,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -114,7 +94,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
               </div>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input
@@ -130,11 +110,17 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
               data-testid="password-input"
             />
           </div>
-          
+
+          {authError && (
+            <div data-testid="auth-error" role="alert" className="text-destructive text-sm">
+              {authError}
+            </div>
+          )}
+
           <Button type="submit" className="w-full" disabled={isLoading} data-testid="auth-submit">
             {isLoading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
           </Button>
-          
+
           <Button
             type="button"
             variant="ghost"

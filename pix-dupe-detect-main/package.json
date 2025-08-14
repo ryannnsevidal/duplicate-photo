@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc -b && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -16,7 +16,7 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui"
+    "e2e:ui": "xvfb-run -a playwright test --ui"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -106,6 +106,7 @@
     "@testing-library/user-event": "^14.6.1",
     "jsdom": "^26.1.0",
     "msw": "^2.10.4",
-    "@playwright/test": "^1.54.2"
+    "@playwright/test": "^1.54.2",
+    "cross-env": "^7.0.3"
   }
 }
