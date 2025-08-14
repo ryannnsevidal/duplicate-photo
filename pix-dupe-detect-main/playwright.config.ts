@@ -1,25 +1,36 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test'
+
+const PORT = process.env.PORT || 4173
 
 export default defineConfig({
-  testDir: '.', // we'll match tests below
+  testDir: './',
   testMatch: [
-    'e2e/**/*.spec.ts',
     'tests/**/*.spec.ts',
+    'e2e/**/*.spec.ts'
   ],
-  use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:5173',
-    headless: true, // ✅ runs in Codespaces without X server
-  },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-  ],
-  // Optional: auto-serve your built app for E2E
+  timeout: 30_000,
+  expect: { timeout: 5_000 },
+  retries: 0,
+  reporter: [['list'], ['html', { open: 'never' }]],
   webServer: process.env.PW_WEB_SERVER
     ? {
-        command: 'npm run build && npx http-server dist -p 5173',
-        url: 'http://localhost:5173',
+        command: `bash -lc "VITE_E2E_TEST_MODE=1 npm run build && npm run preview -- --port ${PORT}"`,
+        url: `http://localhost:${PORT}`,
         reuseExistingServer: !process.env.CI,
-        timeout: 60_000,
+        timeout: 120_000,
+        env: {
+          VITE_E2E_TEST_MODE: '1'
+        }
       }
     : undefined,
+  use: {
+    baseURL: `http://localhost:${PORT}`,
+    headless: true,
+    trace: 'on-first-retry',
+    video: 'retain-on-failure',
+    screenshot: 'only-on-failure'
+  },
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } }
+  ],
 });

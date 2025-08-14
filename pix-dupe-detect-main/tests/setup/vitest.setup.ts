@@ -20,17 +20,29 @@ process.env.TZ = 'America/Los_Angeles';
   return {} as ImageBitmap; // we don't need real bitmap for logic tests
 };
 
-// Basic Blob mock for tests
+// Ensure Blob has arrayBuffer in older Node/JSDOM combos
+if (typeof Blob !== 'undefined' && !(Blob.prototype as any).arrayBuffer) {
+  (Blob.prototype as any).arrayBuffer = async function () {
+    const parts: any[] = (this as any).parts || [];
+    let total = 0;
+    for (const p of parts) {
+      if (p instanceof ArrayBuffer) total += p.byteLength;
+      else if (ArrayBuffer.isView(p)) total += p.byteLength;
+      else if (typeof p === 'string') total += p.length;
+    }
+    const buffer = new ArrayBuffer(total || 8);
+    return buffer;
+  };
+}
+
+// Basic Blob mock for tests if missing
 if (typeof global.Blob === 'undefined') {
   (global as any).Blob = class MockBlob {
     constructor(public parts: any[], public options?: any) {}
-    
     async arrayBuffer() {
-      // Return a mock ArrayBuffer for testing
       return new ArrayBuffer(8);
     }
-    
     get size() { return 8; }
     get type() { return 'image/jpeg'; }
-  };
+  } as any;
 }

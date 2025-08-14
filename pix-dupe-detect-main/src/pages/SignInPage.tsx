@@ -10,6 +10,7 @@ export function SignInPage() {
   const { user, loading, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const redirected = useRef(false);
+  const E2E = import.meta.env.VITE_E2E_TEST_MODE === '1' || import.meta.env.VITE_E2E_TEST_MODE === 'true';
 
   useEffect(() => {
     if (redirected.current || loading || !user) return;
@@ -63,6 +64,11 @@ export function SignInPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md space-y-6"
       >
+        {E2E && (
+          <div className="text-center text-xs text-muted-foreground" data-testid="e2e-banner">
+            E2E Test Mode
+          </div>
+        )}
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">Welcome Back</h1>
           <p className="text-muted-foreground">Sign in to access your dashboard</p>

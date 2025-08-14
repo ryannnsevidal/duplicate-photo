@@ -7,7 +7,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
+    port: 5173,
   },
   plugins: [
     react(),
@@ -19,8 +19,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  define: {
-    // Expose environment variables to the client
-    'import.meta.env.VITE_E2E_TEST_MODE': JSON.stringify(process.env.VITE_E2E_TEST_MODE),
+  base: '/',
+  build: {
+    outDir: 'dist',
   },
 }));

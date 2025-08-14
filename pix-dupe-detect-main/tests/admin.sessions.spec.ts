@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Admin Sessions Management', () => {
+const E2E = !!Number(process.env.VITE_E2E_TEST_MODE || '0');
+
+(E2E ? test.describe : test.describe.skip)('Admin Sessions Management', () => {
   test.beforeEach(async ({ page }) => {
     // Sign in as admin user
     await page.goto('/signin');

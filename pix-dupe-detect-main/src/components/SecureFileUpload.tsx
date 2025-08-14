@@ -314,7 +314,7 @@ export function SecureFileUpload() {
                 ${isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}
               `}
             >
-              <input {...getInputProps()} ref={fileInputRef} />
+              <input {...getInputProps()} ref={fileInputRef} data-testid="local-file-input" />
               <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               {isDragActive ? (
                 <p className="text-lg">Drop files here...</p>
@@ -339,6 +339,7 @@ export function SecureFileUpload() {
                   onClick={uploadFiles}
                   disabled={uploading}
                   className="min-w-[120px]"
+                  data-testid="upload-submit"
                 >
                   {uploading ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

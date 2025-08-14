@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Landing Page - Unauthenticated @smoke', () => {
   test('should show sign in form elements', async ({ page }) => {
     await page.goto('/signin');
+    await expect(page.locator('body')).toBeVisible();
     
     // Check for form inputs
     await expect(page.getByTestId('email-input')).toBeVisible();
@@ -18,6 +19,7 @@ test.describe('Landing Page - Unauthenticated @smoke', () => {
 
   test('should toggle between sign in and sign up modes', async ({ page }) => {
     await page.goto('/signin');
+    await expect(page.locator('body')).toBeVisible();
     
     // Initially should show "Sign In"
     await expect(page.getByTestId('auth-submit')).toHaveText('Sign In');
