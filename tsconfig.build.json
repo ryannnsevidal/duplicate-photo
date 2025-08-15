@@ -1,34 +1,36 @@
 {
-	"compilerOptions": {
-		"target": "ES2022",
-		"module": "ESNext",
-		"moduleResolution": "Bundler",
-		"outDir": "dist",
-		"rootDir": "src",
-		"strict": true,
-		"esModuleInterop": true,
-		"skipLibCheck": true,
-		"resolveJsonModule": true
-	},
-	"include": [
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  	"include": [
 		"src/api/**/*.ts",
 		"src/worker/**/*.ts",
 		"src/cli/**/*.ts",
 		"src/scanner/**/*.ts",
 		"src/db/**/*.ts",
 		"src/lib/**/*.ts",
-		"src/pdf/**/*.ts"
+		"src/pdf/text.ts",
+		"src/pdf/hash.ts",
+		"src/pdf/canonicalize.ts"
 	],
-	"exclude": [
-		"node_modules",
-		"dist",
-		"pix-dupe-detect-main/**",
-		"src/components/**",
-		"src/hooks/**",
-		"src/types/**",
-		"src/utils/**",
-		"src/lib/supabaseClient.ts",
-		"src/lib/utils.ts",
-		"src/pdf/render.ts"
-	]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "pix-dupe-detect-main/**",
+    "src/components/**",
+    "src/hooks/**",
+    "src/types/**",
+    "src/utils/**",
+    "src/lib/supabaseClient.ts",
+    "src/lib/utils.ts",
+    "src/pdf/render.ts"
+  ]
 }

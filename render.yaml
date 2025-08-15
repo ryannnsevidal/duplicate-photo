@@ -22,21 +22,6 @@ services:
       - key: CONCURRENCY
         value: "8"
 
-    envVars:
-      - key: NODE_VERSION
-        value: "20"
-      - key: VITE_SUPABASE_URL
-        sync: false
-      - key: VITE_SUPABASE_ANON_KEY
-        sync: false
-      - key: VITE_APP_NAME
-        value: "PIX DUPE DETECT"
-      - key: VITE_APP_ENVIRONMENT
-        value: "production"
-      - key: VITE_MAX_FILE_SIZE
-        value: "10485760"
-      - key: VITE_ALLOWED_FILE_TYPES
-        value: "image/jpeg,image/png,image/gif,image/webp"
 
     routes:
       - type: rewrite

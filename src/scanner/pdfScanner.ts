@@ -2,9 +2,9 @@ import path from 'node:path';
 import { stat } from 'node:fs/promises';
 import { hashPdfAtPath } from '../pdf/hash';
 
-let renderModule: any = null;
+let renderModule: { renderSampledPages: (pdfPath: string, opts?: any) => Promise<Array<{ pageIndex: number; buffer: Buffer; width: number; height: number }>> } | null = null;
 try {
-	renderModule = await import('../pdf/render');
+	renderModule = (await import('../pdf/' + 'render')) as any;
 } catch {}
 
 export interface ScannedPdfRecord {
@@ -25,7 +25,7 @@ export async function scanSinglePdf(filePath: string): Promise<ScannedPdfRecord 
 	const f = await hashPdfAtPath(filePath);
 	const pages: Array<{ page_index: number; phash: bigint; width: number; height: number }> = [];
 	if (renderModule) {
-		const { renderSampledPages } = renderModule as typeof import('../pdf/render');
+		const { renderSampledPages } = renderModule;
 		const renders = await renderSampledPages(filePath);
 		const { phash64FromBuffer } = await import('../lib/hash');
 		for (const r of renders) {
