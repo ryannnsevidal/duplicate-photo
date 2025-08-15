@@ -1,10 +1,26 @@
 services:
   - type: web
-    name: pix-dupe-detect-ui
-    env: static
-    rootDir: pix-dupe-detect-main
+    name: pix-dupe-detect-api
+    env: node
     buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    startCommand: node dist/api/server.js
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: API_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DUPE_ROOT
+        sync: false
+      - key: TRASH_DIR
+        sync: false
+      - key: THUMBNAIL_DIR
+        sync: false
+      - key: SIMILARITY_THRESHOLD
+        value: "8"
+      - key: CONCURRENCY
+        value: "8"
 
     envVars:
       - key: NODE_VERSION
@@ -47,8 +63,8 @@ services:
   - type: worker
     name: dupe-scanner-worker
     env: node
-    buildCommand: npm ci && npm run build --if-present
-    startCommand: node dist/worker.js
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/worker/index.js
     envVars:
       - key: NODE_VERSION
         value: "20"
