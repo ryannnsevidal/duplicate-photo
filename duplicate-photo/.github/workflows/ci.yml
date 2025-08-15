@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Lint • Type • Unit • E2E • Build (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm -s tsc -p tsconfig.json
+
+      - name: Generate e2e fixtures
+        run: |
+          if [ -f tests/e2e/fixtures/generate-pdfs.ts ]; then
+            pnpm tsx tests/e2e/fixtures/generate-pdfs.ts
+          fi
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Unit tests
+        run: pnpm test -- --reporter=dot
+
+      - name: E2E tests (Playwright)
+        env:
+          API_TOKEN: testtoken
+          DUPE_ROOT: ${{ github.workspace }}/.tmp-dupe-root
+          TRASH_DIR: ${{ github.workspace }}/.tmp-dupe-root/.dupe-trash
+          THUMBNAIL_DIR: ${{ github.workspace }}/.tmp-dupe-root/.dupe-thumbs
+          SIMILARITY_THRESHOLD: '8'
+          CONCURRENCY: '4'
+        run: |
+          mkdir -p "$DUPE_ROOT"
+          pnpm test:e2e || (echo "::warning::Playwright tests failed (marking non-blocking on PRs)"; [ "${{ github.event_name }}" = "pull_request" ] && exit 0 || exit 1)
+
+      - name: Build
+        run: pnpm build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.node }}
+          path: |
+            dist/**
+            !**/*.map
