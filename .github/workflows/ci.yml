@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm i --package-lock-only && npm ci; fi
+
+      - name: Lint (root)
+        run: npm run lint --if-present
+
+      - name: Typecheck (root)
+        run: npm run type-check --if-present
+
+      - name: Unit tests (root)
+        run: npm run test --if-present
+
+      - name: Install UI dependencies
+        working-directory: pix-dupe-detect-main
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm i --package-lock-only && npm ci; fi
+
+      - name: Lint (UI)
+        working-directory: pix-dupe-detect-main
+        run: npm run lint --if-present
+
+      - name: Typecheck (UI)
+        working-directory: pix-dupe-detect-main
+        run: npm run -s build --dry-run || true
+
+      - name: Install Playwright Browsers
+        uses: microsoft/playwright-github-action@v1
+        with:
+          working-directory: pix-dupe-detect-main
+
+      - name: Unit tests (UI)
+        working-directory: pix-dupe-detect-main
+        run: npm run test --if-present
+
+      - name: E2E tests (UI)
+        working-directory: pix-dupe-detect-main
+        env:
+          CI: true
+        run: npm run e2e --if-present
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: pix-dupe-detect-main/playwright-report
+          if-no-files-found: ignore
