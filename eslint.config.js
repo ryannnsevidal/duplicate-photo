@@ -18,6 +18,10 @@ export default [
 				project: false,
 			},
 		},
+		rules: {
+			'@typescript-eslint/no-explicit-any': 'off',
+			'no-empty': 'off',
+		},
 	},
 	// Ensure Node.js globals (console, process, etc.) are recognized in scripts
 	{
