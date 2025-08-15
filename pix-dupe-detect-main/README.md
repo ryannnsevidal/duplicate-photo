@@ -1,3 +1,11 @@
+### TL;DR (Dev Onboarding)
+1) Node 20 → `npm ci`
+2) `cp .env.local.example .env.local` and set `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`
+3) `npm run dev` → open http://localhost:5173
+4) Want cloud import? add `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY`, `VITE_DROPBOX_APP_KEY`
+5) Admin? run SQL: `SELECT public.assign_admin_role('<your email>');`
+6) Build: `npm run build` → Deploy via Render (uses `render.yaml`)
+
 # 🔍 Pix Dupe Detect - Enterprise File Deduplication Platform
 
 [![Production Ready](https://img.shields.io/badge/Production-Ready-brightgreen.svg)](https://shields.io/)
@@ -523,3 +531,75 @@ npm run preview
 - Supabase (Edge Function secrets)
   - `GOOGLE_CLIENT_ID`, `GOOGLE_API_KEY`, `DROPBOX_APP_KEY`
   - Optional: `GOOGLE_CLIENT_SECRET`, `DROPBOX_APP_SECRET`
+
+## 🧭 Handoff Playbook (for new engineers)
+
+0) Sanity check (repo cleanliness)
+- Essentials only: `pix-dupe-detect-main/`, `render.yaml`, root `.vscode/` (optional), root `package.json`
+- Single-source docs: only `pix-dupe-detect-main/README.md`
+- Quick guard:
+```bash
+git ls-files '*.[mM][dD]' | grep -v 'pix-dupe-detect-main/README.md' || echo "✅ only README.md present"
+```
+
+1) Local bring-up (clean room)
+```bash
+git clone <repo>
+cd <repo>/pix-dupe-detect-main
+nvm use 20 || echo "ensure Node 20.x installed"
+npm ci
+cp .env.local.example .env.local
+# fill: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+# optional: VITE_GOOGLE_CLIENT_ID, VITE_GOOGLE_API_KEY, VITE_DROPBOX_APP_KEY
+npm run dev
+```
+Expected routes OK: `/`, `/signin`, `/upload`, `/admin` (auth-gated)
+
+2) Supabase configuration (once per environment)
+- Auth: set Site URL(s), Redirect URLs; OTP expiry 3600; SMTP in prod
+- Security: RLS on; grant admin:
+```sql
+SELECT public.assign_admin_role('your-admin@company.com');
+```
+- Storage: ensure `uploads` bucket exists
+- Edge Functions: deploy `cloud-credentials`, `dedup-analyzer`, etc.
+
+3) OAuth + Cloud Import
+- Google: enable Drive, Picker, Photos; add origins; scopes:
+  - `https://www.googleapis.com/auth/drive.readonly`
+  - `https://www.googleapis.com/auth/photoslibrary.readonly`
+- Set env: `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY`
+- Dropbox: add Chooser domains; set `VITE_DROPBOX_APP_KEY`
+
+4) Render deployment (static)
+- Render reads `render.yaml`; Node 20; `npm ci && npm run build`; publish `dist`; rewrite `/* -> /index.html`
+- Prod env: `NODE_VERSION=20`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_ENVIRONMENT=production`, `VITE_E2E_TEST_MODE=0`, optional cloud vars
+- Post-deploy: hard refresh
+
+5) Security hardening (pre-handoff)
+- Replace reCAPTCHA test key in `CaptchaWrapper.tsx`
+- Enforce MFA for admins
+- Verify rate limits, IP reputation flows
+- Optional Sentry DSN
+
+6) Smoke test (10 min)
+- Signup/login; token persists
+- Upload images incl. a duplicate; progress OK
+- Dedupe flagged; `file_upload_logs` updated
+- `/admin` loads; audit logs visible
+- Deep links refresh OK (`/upload`, `/admin`)
+- Cloud import: Google Picker/Photos and Dropbox chooser open
+
+7) E2E + CI (optional)
+```bash
+PW_WEB_SERVER=1 npm run e2e
+npm run type-check && npm run lint && npm run build
+```
+
+8) “What’s safe to delete” rules
+- Keep: `pix-dupe-detect-main/**`, `render.yaml`, root `.vscode/`, root `package.json`
+- Delete if reappears: zips, legacy `supabase/` at repo root, duplicate public/ outside app, extra markdowns, screenshots not referenced
+- Quick guard:
+```bash
+ls -la | grep -v 'pix-dupe-detect-main\|render.yaml\|\.vscode\|package.json\|^\.$\|^\.\.$'
+```
