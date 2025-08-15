@@ -12,6 +12,10 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm run lint --if-present
-      - run: npm run format --if-present
+      - name: Install deps (root)
+        run: npm ci
+        working-directory: ${{ github.workspace }}
+      - name: Lint (root only)
+        run: npm --prefix ${{ github.workspace }} run lint --if-present
+      - name: Format check (root only)
+        run: npm --prefix ${{ github.workspace }} run format --if-present
