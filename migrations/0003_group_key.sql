@@ -1,0 +1,2 @@
+ALTER TABLE dupe_groups ADD COLUMN IF NOT EXISTS group_key TEXT UNIQUE;
+ALTER TABLE dupe_group_members ADD COLUMN IF NOT EXISTS extra JSONB;
