@@ -24,6 +24,16 @@ export async function phash64(filePath: string): Promise<bigint> {
 	return bits;
 }
 
+export async function phash64FromBuffer(buffer: Buffer): Promise<bigint> {
+	const image = sharp(buffer).grayscale().resize(32, 32, { fit: 'fill' });
+	const { data } = await image.raw().toBuffer({ resolveWithObject: true });
+	const floats = new Float64Array(32 * 32);
+	for (let i = 0; i < data.length; i++) floats[i] = data[i] / 255;
+	const dct = dct2d(floats, 32);
+	const bits = blockToBits(dct, 32);
+	return bits;
+}
+
 function dct2d(src: Float64Array, n: number): Float64Array {
 	const dst = new Float64Array(n * n);
 	const tmp = new Float64Array(n * n);

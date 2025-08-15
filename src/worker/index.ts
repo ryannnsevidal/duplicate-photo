@@ -35,6 +35,12 @@ async function main(): Promise<void> {
 					pdf_simhash: rec.pdf_simhash ?? null,
 				});
 				console.log(`[worker] upserted image id=${id}`);
+				const { insertPdfPageRows } = await import('../db/pdfPages');
+				await insertPdfPageRows(
+					client,
+					rec.pages.map((p) => ({ image_id: id, page_index: p.page_index, phash: p.phash, simhash: null, width: p.width, height: p.height })),
+				);
+				console.log(`[worker] inserted ${rec.pages.length} page rows`);
 			});
 		}
 	}

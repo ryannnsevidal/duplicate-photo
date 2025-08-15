@@ -20,7 +20,8 @@
 		"src/cli/**/*.ts",
 		"src/scanner/**/*.ts",
 		"src/db/**/*.ts",
-		"src/lib/hash.ts",
+		"src/lib/**/*.ts",
+		"src/pdf/**/*.ts",
 		"playwright.config.ts"
 	],
 	"exclude": [
@@ -32,6 +33,7 @@
 		"src/types/**",
 		"src/utils/**",
 		"src/lib/supabaseClient.ts",
-		"src/lib/utils.ts"
+		"src/lib/utils.ts",
+		"src/pdf/render.ts"
 	]
 }
