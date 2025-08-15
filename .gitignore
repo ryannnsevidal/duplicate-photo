@@ -1,0 +1,20 @@
+# Node
+node_modules/
+dist/
+
+# Env / secrets
+.env
+.env.*
+
+# Tests / reports
+coverage/
+playwright-report/
+test-results/
+
+# Misc
+.DS_Store
+.turbo/
+.cache/
+
+# Large binaries (avoid committing)
+# pix-dupe-detect-ready.zip  # KEEP OUT OF GIT. Use Releases or LFS instead.
