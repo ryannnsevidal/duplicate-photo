@@ -19,6 +19,8 @@
     "format:fix": "prettier --write .",
     "type-check": "tsc --noEmit",
     "test": "vitest",
+    "test:unit": "vitest",
+    "test:e2e": "playwright test",
     "test:e2e": "playwright test",
     "migrate": "drizzle-kit migrate",
     "clean": "rm -rf node_modules dist .turbo",
