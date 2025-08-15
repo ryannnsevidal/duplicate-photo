@@ -21,10 +21,6 @@ services:
         value: "8"
       - key: CONCURRENCY
         value: "8"
-
-    envVars:
-      - key: NODE_VERSION
-        value: "20"
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
