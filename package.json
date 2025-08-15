@@ -15,7 +15,7 @@
     "trash": "tsx src/cli/trash.ts",
     "lint": "eslint \"src/{api,worker,cli,db,lib,pdf,scanner}/**/*.{ts,tsx}\" \"scripts/**/*.{js,mjs,ts}\" --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --check .",
+    "format": "prettier --check \"src/**/*.{ts,tsx,js,mjs,json,yaml,yml,md}\" \"scripts/**/*.{js,mjs,ts}\" render.yaml eslint.config.js vitest.config.ts \".github/workflows/*.yml\"",
     "format:fix": "prettier --write .",
     "type-check": "tsc --noEmit",
     "test": "vitest --passWithNoTests",
