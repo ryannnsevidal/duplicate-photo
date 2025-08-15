@@ -1,4 +1,7 @@
 import process from 'node:process';
+import { withPg } from '../db/client';
+import { upsertImage } from '../db/upsert';
+import { scanSinglePdf } from '../scanner/pdfScanner';
 
 function getEnv(name: string, fallback?: string): string {
 	const value = process.env[name] ?? fallback;
@@ -13,25 +16,28 @@ async function main(): Promise<void> {
 	console.log('[worker] starting duplicate scanner worker');
 	const databaseUrl = getEnv('DATABASE_URL');
 	const rootDir = getEnv('DUPE_ROOT');
-	const thumbnailsDir = getEnv('THUMBNAIL_DIR');
-	const trashDir = getEnv('TRASH_DIR');
-	const maxConcurrency = Number(getEnv('CONCURRENCY', '8'));
-	const similarityThreshold = Number(getEnv('SIMILARITY_THRESHOLD', '8'));
+	const pathToScan = process.env.SCAN_ONE_PATH; // dev helper
+	console.log(JSON.stringify({ DATABASE_URL: !!databaseUrl, DUPE_ROOT: rootDir, SCAN_ONE_PATH: pathToScan }));
 
-	console.log(
-		JSON.stringify(
-			{
-				DATABASE_URL: databaseUrl ? '<set>' : '<missing>',
-				DUPE_ROOT: rootDir || '<missing>',
-				THUMBNAIL_DIR: thumbnailsDir || '<missing>',
-				TRASH_DIR: trashDir || '<missing>',
-				CONCURRENCY: maxConcurrency,
-				SIMILARITY_THRESHOLD: similarityThreshold,
-			},
-			null,
-			2,
-		),
-	);
+	if (pathToScan && pathToScan.toLowerCase().endsWith('.pdf')) {
+		console.log(`[worker] scanning single PDF: ${pathToScan}`);
+		const rec = await scanSinglePdf(pathToScan);
+		if (rec) {
+			await withPg(async (client) => {
+				const id = await upsertImage(client, {
+					path: rec.path,
+					size: rec.size,
+					sha256: rec.sha256,
+					sha256_canonical: rec.sha256_canonical,
+					file_type: rec.file_type,
+					pdf_pages: rec.pdf_pages,
+					pdf_has_text: rec.pdf_has_text ?? null,
+					pdf_simhash: rec.pdf_simhash ?? null,
+				});
+				console.log(`[worker] upserted image id=${id}`);
+			});
+		}
+	}
 
 	setInterval(() => {
 		process.stdout.write('.');
