@@ -1,0 +1,17 @@
+node_modules/
+dist/
+pix-dupe-detect-main/**
+# Ignore most source files for now to avoid sweeping reformatting in CI
+src/**
+migrations/**
+package-lock.json
+bun.lockb
+.github/**
+.vscode/**
+README.md
+CONTRIBUTING.md
+eslint.config.js
+playwright.config.ts
+vitest.config.ts
+scripts/**
+tsconfig*.json

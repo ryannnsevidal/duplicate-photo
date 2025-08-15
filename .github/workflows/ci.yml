@@ -44,6 +44,10 @@ jobs:
         working-directory: pix-dupe-detect-main
         run: npm run -s build --dry-run || true
 
+      - name: Build (UI)
+        working-directory: pix-dupe-detect-main
+        run: npm run build --if-present
+
       - name: Install Playwright Browsers
         uses: microsoft/playwright-github-action@v1
         with:
@@ -57,6 +61,7 @@ jobs:
         working-directory: pix-dupe-detect-main
         env:
           CI: true
+          PW_WEB_SERVER: '1'
         run: npm run e2e --if-present
 
       - name: Upload Playwright report

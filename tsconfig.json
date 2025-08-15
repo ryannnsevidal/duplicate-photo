@@ -22,6 +22,7 @@
 		"src/db/**/*.ts",
 		"src/lib/**/*.ts",
 		"src/pdf/**/*.ts",
+		"src/types/**/*.d.ts",
 		"playwright.config.ts"
 	],
 	"exclude": [
@@ -30,7 +31,6 @@
 		"pix-dupe-detect-main/**",
 		"src/components/**",
 		"src/hooks/**",
-		"src/types/**",
 		"src/utils/**",
 		"src/lib/supabaseClient.ts",
 		"src/lib/utils.ts",

@@ -17,7 +17,7 @@
 		"src/scanner/**/*.ts",
 		"src/db/**/*.ts",
 		"src/lib/**/*.ts",
-		"src/pdf/**/*.ts"
+		"src/types/**/*.d.ts"
 	],
 	"exclude": [
 		"node_modules",
@@ -25,7 +25,6 @@
 		"pix-dupe-detect-main/**",
 		"src/components/**",
 		"src/hooks/**",
-		"src/types/**",
 		"src/utils/**",
 		"src/lib/supabaseClient.ts",
 		"src/lib/utils.ts",
