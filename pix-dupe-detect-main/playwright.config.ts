@@ -3,11 +3,7 @@ import { defineConfig, devices } from '@playwright/test'
 const PORT = process.env.PORT || 4173
 
 export default defineConfig({
-  testDir: './',
-  testMatch: [
-    'tests/**/*.spec.ts',
-    'e2e/**/*.spec.ts'
-  ],
+  testDir: './tests',
   timeout: 30_000,
   expect: { timeout: 5_000 },
   retries: 0,
