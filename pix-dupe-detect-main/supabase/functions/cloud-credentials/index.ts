@@ -32,7 +32,7 @@ serve(async (req) => {
     const { action }: RequestBody = await req.json();
 
     switch (action) {
-      case 'get_google_credentials':
+      case 'get_google_credentials': {
         // Get Google credentials from environment
         const googleClientId = Deno.env.get('GOOGLE_CLIENT_ID');
         const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
@@ -71,8 +71,9 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
 
-      case 'get_dropbox_credentials':
+      case 'get_dropbox_credentials': {
         // Get Dropbox credentials from environment
         const dropboxAppKey = Deno.env.get('DROPBOX_APP_KEY');
 
@@ -106,6 +107,7 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
 
       default:
         return new Response(

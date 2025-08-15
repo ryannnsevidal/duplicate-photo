@@ -9,7 +9,7 @@ const recaptchaSecret = Deno.env.get('RECAPTCHA_SECRET_KEY')
 const rcloneRemote = Deno.env.get('RCLONE_REMOTE') || 'default:uploads'
 
 // JWT Key caching
-let jwksCache: any = null
+let jwksCache: jose.JSONWebKeySet | null = null
 let jwksCacheExpiry = 0
 
 interface FileMetadata {
@@ -24,11 +24,17 @@ interface FileMetadata {
   userAgent: string
 }
 
+interface DuplicateMatch {
+  original_filename: string
+  sha256_hash: string
+  created_at?: string
+}
+
 interface DedupResult {
   isDuplicate: boolean
   duplicateType?: string
   confidence?: number
-  matches?: any[]
+  matches?: DuplicateMatch[]
   processingTimeMs: number
 }
 
@@ -36,7 +42,7 @@ interface DedupResult {
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // Fetch and cache JWKS from Supabase
-async function getJWKS(): Promise<any> {
+async function getJWKS(): Promise<jose.JSONWebKeySet> {
   const now = Date.now()
   
   if (jwksCache && now < jwksCacheExpiry) {
@@ -52,7 +58,8 @@ async function getJWKS(): Promise<any> {
       throw new Error(`Failed to fetch JWKS: ${response.status}`)
     }
     
-    jwksCache = await response.json()
+    const json = await response.json()
+    jwksCache = json as jose.JSONWebKeySet
     jwksCacheExpiry = now + (12 * 60 * 60 * 1000) // Cache for 12 hours
     
     console.log('JWKS cache updated successfully')
@@ -175,7 +182,7 @@ function extractPDFStructure(pdfData: Uint8Array): string {
     const pageCount = pageCountMatch ? parseInt(pageCountMatch[1]) : 0
     
     // Extract font information
-    const fontMatches = pdfText.match(/\/BaseFont\s*\/([A-Za-z0-9+\-]+)/g) || []
+    const fontMatches = pdfText.match(/\/BaseFont\s*\/([-A-Za-z0-9+]+)/g) || []
     const fonts = [...new Set(fontMatches.map(f => f.split('/')[2]))].sort()
     
     // Extract text block patterns (simplified)
@@ -240,7 +247,7 @@ async function checkDuplicates(
       isDuplicate: true,
       duplicateType: 'sha256',
       confidence: 1.0,
-      matches: exactMatches,
+      matches: exactMatches as DuplicateMatch[],
       processingTimeMs: Date.now() - startTime
     }
   }
@@ -257,7 +264,7 @@ async function checkDuplicates(
         isDuplicate: true,
         duplicateType: 'phash',
         confidence: 0.95,
-        matches: fuzzyMatches,
+        matches: fuzzyMatches as DuplicateMatch[],
         processingTimeMs: Date.now() - startTime
       }
     }
@@ -275,7 +282,7 @@ async function checkDuplicates(
         isDuplicate: true,
         duplicateType: 'structure',
         confidence: 0.85,
-        matches: structureMatches,
+        matches: structureMatches as DuplicateMatch[],
         processingTimeMs: Date.now() - startTime
       }
     }

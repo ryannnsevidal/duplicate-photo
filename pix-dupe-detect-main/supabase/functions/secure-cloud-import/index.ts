@@ -72,16 +72,16 @@ serve(async (req) => {
     }
 
     const jobId = jobData.id;
-    const results = [];
+    const results: Array<{ name: string; success: boolean; cloud_path?: string; size?: number; error?: string }> = [];
 
     for (const item of items) {
       try {
         let fileBytes: Uint8Array | null = null;
-        let fileName = item.name || `import-${Date.now()}`;
-        let contentType = item.mimeType || 'application/octet-stream';
+        const fileName = item.name || `import-${Date.now()}`;
+        const contentType = item.mimeType || 'application/octet-stream';
 
         switch (provider) {
-          case 'google-drive':
+          case 'google-drive': {
             if (!item.id) throw new Error('Google Drive file ID required');
             
             // Use stored access token or provided one
@@ -117,8 +117,9 @@ serve(async (req) => {
 
             fileBytes = new Uint8Array(await driveResponse.arrayBuffer());
             break;
+          }
 
-          case 'dropbox':
+          case 'dropbox': {
             if (!item.link) throw new Error('Dropbox direct link required');
             
             // Download from Dropbox direct link
@@ -129,8 +130,9 @@ serve(async (req) => {
 
             fileBytes = new Uint8Array(await dropboxResponse.arrayBuffer());
             break;
+          }
 
-          case 'google-photos':
+          case 'google-photos': {
             if (!item.baseUrl) throw new Error('Google Photos base URL required');
             
             // Use stored access token or provided one
@@ -163,6 +165,7 @@ serve(async (req) => {
 
             fileBytes = new Uint8Array(await photosResponse.arrayBuffer());
             break;
+          }
 
           default:
             throw new Error(`Unsupported provider: ${provider}`);

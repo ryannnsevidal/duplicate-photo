@@ -56,7 +56,7 @@ const handler = async (req: Request): Promise<Response> => {
     const domain = pathSegments[pathSegments.length - 1];
 
     switch (req.method) {
-      case 'GET':
+      case 'GET': {
         // List all blocked domains
         const { data: domains, error: getError } = await supabase
           .from('blocked_email_domains')
@@ -75,8 +75,9 @@ const handler = async (req: Request): Promise<Response> => {
           JSON.stringify({ domains }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
 
-      case 'POST':
+      case 'POST': {
         // Add new blocked domain
         const domainData: DomainRequest = await req.json();
         
@@ -127,8 +128,9 @@ const handler = async (req: Request): Promise<Response> => {
           JSON.stringify({ message: 'Domain blocked successfully', domain: insertData }),
           { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
 
-      case 'DELETE':
+      case 'DELETE': {
         // Remove blocked domain
         if (!domain) {
           return new Response(
@@ -162,6 +164,7 @@ const handler = async (req: Request): Promise<Response> => {
           JSON.stringify({ message: 'Domain unblocked successfully' }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
 
       default:
         return new Response(
@@ -169,7 +172,7 @@ const handler = async (req: Request): Promise<Response> => {
           { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),

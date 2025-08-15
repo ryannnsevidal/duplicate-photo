@@ -44,14 +44,15 @@ serve(async (req) => {
     const { action, provider, code, access_token, refresh_token, expires_in, redirect_uri }: OAuthRequest = await req.json();
 
     switch (action) {
-      case 'get_auth_url':
+      case 'get_auth_url': {
         const authUrl = await generateAuthUrl(provider, redirect_uri);
         return new Response(
           JSON.stringify({ auth_url: authUrl }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
 
-      case 'exchange_code':
+      case 'exchange_code': {
         if (!code) throw new Error('Authorization code required');
         const tokenData = await exchangeCodeForToken(provider, code, redirect_uri);
         
@@ -62,8 +63,9 @@ serve(async (req) => {
           JSON.stringify({ success: true, expires_in: tokenData.expires_in }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
 
-      case 'store_token':
+      case 'store_token': {
         if (!access_token) throw new Error('Access token required');
         
         await storeOAuthToken(supabaseClient, userId, provider, {
@@ -76,6 +78,7 @@ serve(async (req) => {
           JSON.stringify({ success: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
 
       default:
         throw new Error('Invalid action');
@@ -97,7 +100,7 @@ async function generateAuthUrl(provider: string, redirectUri?: string): Promise<
   const baseRedirectUri = redirectUri || 'https://your-app.onrender.com/oauth-callback';
   
   switch (provider) {
-    case 'google':
+    case 'google': {
       const googleClientId = Deno.env.get('GOOGLE_CLIENT_ID');
       if (!googleClientId) throw new Error('Google Client ID not configured');
       
@@ -109,8 +112,9 @@ async function generateAuthUrl(provider: string, redirectUri?: string): Promise<
         `response_type=code&` +
         `access_type=offline&` +
         `prompt=consent`;
+    }
 
-    case 'google-photos':
+    case 'google-photos': {
       const photosClientId = Deno.env.get('GOOGLE_CLIENT_ID');
       if (!photosClientId) throw new Error('Google Client ID not configured');
       
@@ -122,8 +126,9 @@ async function generateAuthUrl(provider: string, redirectUri?: string): Promise<
         `response_type=code&` +
         `access_type=offline&` +
         `prompt=consent`;
+    }
 
-    case 'dropbox':
+    case 'dropbox': {
       const dropboxClientId = Deno.env.get('DROPBOX_APP_KEY');
       if (!dropboxClientId) throw new Error('Dropbox App Key not configured');
       
@@ -132,6 +137,7 @@ async function generateAuthUrl(provider: string, redirectUri?: string): Promise<
         `redirect_uri=${encodeURIComponent(baseRedirectUri)}&` +
         `response_type=code&` +
         `token_access_type=offline`;
+    }
 
     default:
       throw new Error(`Unsupported provider: ${provider}`);
@@ -143,7 +149,7 @@ async function exchangeCodeForToken(provider: string, code: string, redirectUri?
 
   switch (provider) {
     case 'google':
-    case 'google-photos':
+    case 'google-photos': {
       const googleClientId = Deno.env.get('GOOGLE_CLIENT_ID');
       const googleClientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET') ?? Deno.env.get('GOOGLE_PHOTOS_CLIENT_SECRET');
       
@@ -168,8 +174,9 @@ async function exchangeCodeForToken(provider: string, code: string, redirectUri?
       }
 
       return await googleResponse.json();
+    }
 
-    case 'dropbox':
+    case 'dropbox': {
       const dropboxAppKey = Deno.env.get('DROPBOX_APP_KEY');
       const dropboxAppSecret = Deno.env.get('DROPBOX_APP_SECRET');
       
@@ -194,13 +201,14 @@ async function exchangeCodeForToken(provider: string, code: string, redirectUri?
       }
 
       return await dropboxResponse.json();
+    }
 
     default:
       throw new Error(`Unsupported provider: ${provider}`);
   }
 }
 
-async function storeOAuthToken(supabaseClient: any, userId: string, provider: string, tokenData: any) {
+async function storeOAuthToken(supabaseClient: ReturnType<typeof createClient>, userId: string, provider: string, tokenData: { access_token?: string; refresh_token?: string; expires_in: number; scope?: string }) {
   const expiresAt = new Date(Date.now() + (tokenData.expires_in * 1000));
   
   // Deactivate existing tokens

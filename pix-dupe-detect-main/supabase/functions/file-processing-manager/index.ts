@@ -87,7 +87,7 @@ serve(async (req) => {
     const contentHash = calculatePDFHash(fileName, fileType);
 
     // Check for duplicates based on hashes
-    const duplicateChecks = [];
+    const duplicateChecks: DuplicateResult[] = [];
     
     // Check SHA256 duplicates
     const { data: sha256Duplicates } = await supabaseClient
@@ -139,7 +139,7 @@ serve(async (req) => {
       .insert({
         original_filename: fileName,
         file_size_bytes: fileSize,
-        cloud_provider: cloudProvider as any,
+        cloud_provider: cloudProvider,
         sha256_hash: sha256Hash,
         perceptual_hash: perceptualHash,
         content_hash: contentHash,
@@ -188,7 +188,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'File processing failed',
-        details: error.message
+        details: error instanceof Error ? error.message : 'Unknown error'
       }),
       {
         status: 500,

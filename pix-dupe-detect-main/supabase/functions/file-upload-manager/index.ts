@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0';
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
 // Types
@@ -94,13 +95,13 @@ async function runRcloneUpload(
     console.error('Rclone upload failed:', error);
     return {
       success: false,
-      output: `Upload failed: ${error.message}`
+      output: `Upload failed: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 }
 
 async function detectDuplicates(
-  supabase: any,
+  supabase: SupabaseClient,
   userId: string,
   sha256Hash: string,
   perceptualHash: string | null,
@@ -601,7 +602,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error', 
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       }),
       { 
         status: 500, 

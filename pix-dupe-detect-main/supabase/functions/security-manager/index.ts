@@ -6,10 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface SecurityRequest {
-  action: 'check_rate_limit' | 'log_security_event' | 'assign_role' | 'get_audit_logs';
-  data: any;
-}
+type SecurityRequest =
+  | { action: 'check_rate_limit'; data: { action_type: string; max_attempts?: number; window_minutes?: number } }
+  | { action: 'log_security_event'; data: { action: string; resource: string; success: boolean; error_message?: string; metadata?: Record<string, unknown> } }
+  | { action: 'assign_role'; data: { user_id: string; role: string } }
+  | { action: 'get_audit_logs'; data: { limit?: number } };
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -39,10 +40,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { action, data }: SecurityRequest = await req.json();
 
-    let result;
+    let result: unknown;
 
     switch (action) {
-      case 'check_rate_limit':
+      case 'check_rate_limit': {
         const { data: rateLimitResult, error: rateLimitError } = await supabase.rpc(
           'check_rate_limit',
           {
@@ -56,8 +57,9 @@ const handler = async (req: Request): Promise<Response> => {
         
         result = { allowed: rateLimitResult };
         break;
+      }
 
-      case 'log_security_event':
+      case 'log_security_event': {
         const { error: logError } = await supabase.rpc('log_security_event', {
           _action: data.action,
           _resource: data.resource,
@@ -70,8 +72,9 @@ const handler = async (req: Request): Promise<Response> => {
         
         result = { logged: true };
         break;
+      }
 
-      case 'assign_role':
+      case 'assign_role': {
         // Check if current user is admin
         const { data: hasAdminRole, error: roleCheckError } = await supabase.rpc(
           'has_role',
@@ -94,8 +97,9 @@ const handler = async (req: Request): Promise<Response> => {
         
         result = { assigned: true };
         break;
+      }
 
-      case 'get_audit_logs':
+      case 'get_audit_logs': {
         // Check if user is admin or requesting their own logs
         const { data: isAdmin, error: adminCheckError } = await supabase.rpc(
           'has_role',
@@ -119,6 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
         
         result = { logs };
         break;
+      }
 
       default:
         throw new Error("Invalid action");
@@ -140,12 +145,12 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Security manager error:", error);
     
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       }),
       {

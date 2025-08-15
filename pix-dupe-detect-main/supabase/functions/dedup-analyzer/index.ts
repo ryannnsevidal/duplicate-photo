@@ -12,6 +12,11 @@ interface RequestBody {
   file_ids?: string[];
 }
 
+interface FileLogRow {
+  original_filename: string;
+  file_size_bytes: number;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -39,7 +44,7 @@ serve(async (req) => {
     const { action, user_id, file_ids }: RequestBody = await req.json();
 
     switch (action) {
-      case 'analyze_uploaded_files':
+      case 'analyze_uploaded_files': {
         console.log(`🔍 Starting duplicate analysis for user ${user_id} with ${file_ids?.length || 0} files`);
         
         if (!user_id || !file_ids || file_ids.length === 0) {
@@ -67,14 +72,14 @@ serve(async (req) => {
         console.log(`✅ Retrieved ${files?.length || 0} files for analysis`);
 
         // Simulate AI deduplication analysis
-        const duplicateGroups = [];
-        const analysisResults = [];
+        const duplicateGroups: Array<{ id: string; files: string[]; similarity: number; size_bytes: number; count: number }> = [];
+        const analysisResults: unknown[] = [];
         let duplicatesFound = 0;
 
         // Simple simulation: group files by similar names or sizes
-        const fileMap = new Map();
+        const fileMap = new Map<string, FileLogRow[]>();
         
-        files?.forEach(file => {
+        (files as FileLogRow[] | null)?.forEach((file) => {
           const baseName = file.original_filename.split('.')[0].toLowerCase();
           const sizeGroup = Math.floor(file.file_size_bytes / 1000000); // Group by MB
           const key = `${baseName}_${sizeGroup}`;
@@ -82,16 +87,16 @@ serve(async (req) => {
           if (!fileMap.has(key)) {
             fileMap.set(key, []);
           }
-          fileMap.get(key).push(file);
+          fileMap.get(key)!.push(file);
         });
 
         // Identify duplicates (groups with more than 1 file)
-        fileMap.forEach((group, key) => {
+        fileMap.forEach((group: FileLogRow[], key: string) => {
           if (group.length > 1) {
             duplicatesFound += group.length - 1; // Count extras as duplicates
             duplicateGroups.push({
               id: `group-${key}`,
-              files: group.map(f => f.original_filename),
+              files: group.map((f: FileLogRow) => f.original_filename),
               similarity: 85 + Math.random() * 10, // Random similarity 85-95%
               size_bytes: group[0].file_size_bytes,
               count: group.length
@@ -139,8 +144,9 @@ serve(async (req) => {
           JSON.stringify(results),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
 
-      case 'get_dedup_stats':
+      case 'get_dedup_stats': {
         // Get deduplication statistics for user
         const { data: stats, error: statsError } = await supabaseClient
           .from('dedup_events')
@@ -165,6 +171,7 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
 
       default:
         return new Response(
