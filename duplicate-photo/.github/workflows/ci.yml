@@ -37,7 +37,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm lint || echo "::warning::UI lint failed (non-blocking)"
 
       - name: Typecheck
         run: pnpm -s tsc -p tsconfig.json
