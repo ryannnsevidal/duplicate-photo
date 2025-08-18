@@ -1,0 +1,40 @@
+{
+  "name": "@app/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run --testMatch='**/*.test.ts'",
+    "test:int": "vitest run --testMatch='**/*.integration.test.ts'",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.0",
+    "@fastify/helmet": "^11.1.0",
+    "@fastify/jwt": "^8.0.0",
+    "@fastify/rate-limit": "^9.0.0",
+    "@fastify/swagger": "^8.14.0",
+    "@repo/core": "workspace:*",
+    "@repo/types": "workspace:*",
+    "fastify": "^4.26.0",
+    "fastify-plugin": "^4.5.0",
+    "pino": "^8.19.0",
+    "pino-pretty": "^10.3.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@repo/config": "workspace:*",
+    "@repo/testing": "workspace:*",
+    "@types/node": "^20.14.0",
+    "supertest": "^7.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.5.0",
+    "vitest": "^1.6.0"
+  }
+}

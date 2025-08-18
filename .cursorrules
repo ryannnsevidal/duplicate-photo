@@ -1,0 +1,43 @@
+# === Cursor Project Rules ===
+# Goals:
+# 1) Always make tests pass (green CI). 2) Preserve contracts. 3) Generate docs.
+
+[general]
+- Prefer small, composable functions and pure logic in /packages/core whenever possible.
+- Write or update tests for every change. If tests are missing, generate them in the same PR.
+- Never change public API contracts without updating OpenAPI and marking a version bump.
+- When touching code, update matching docs in /docs/guides and ADRs if design changed.
+- Keep codegen files out of diffs unless schema changed.
+
+[context_selection]
+- When asked to implement/modify a feature:
+  1) Read relevant tests in apps/*/__tests__ and packages/*/__tests__ first.
+  2) Read related domain code in /packages/core and shared types in /packages/types.
+  3) Read API route handlers in apps/api/src/routes and OpenAPI in /docs/reference/openapi.yaml.
+  4) Read UI components in packages/ui and page + server actions in apps/web.
+- Exclude node_modules, build, .next, dist, coverage, storybook-static, .turbo, .nx/cache.
+
+[testing]
+- For TS: use Vitest + Testing Library for UI, Supertest for API, Testcontainers for DB/cache.
+- Generate factories (packages/testing/factories.ts) and prefer realistic data.
+- For flakey tests: use fake timers, idempotent seeders, and ephemeral DBs (testcontainers).
+
+[style]
+- Follow shared ESLint/Prettier in packages/config. Use strict TypeScript (noImplicitAny, exactOptionalPropertyTypes).
+- Enforce functional core / imperative shell: domain logic in packages/core, I/O in apps/*.
+
+[docs]
+- Every new module requires a JSDoc header and a short guide in /docs/guides/<feature>.md.
+- Update /docs/reference/openapi.yaml + regenerate clients in packages/types when API changes.
+- Add/Update an ADR in /docs/adr when architectural choices change.
+
+[commit]
+- Conventional Commits: feat:, fix:, docs:, chore:, refactor:, test:, perf:, build:
+- If codegen or schema changes, include "BREAKING CHANGE:" footer when applicable.
+
+[security]
+- Validate input with zod/typia (frontend & backend). Reject on parse errors.
+- Do not log secrets or PII. Use env-var schema in apps/*/src/env.ts and fail fast if missing.
+
+[performance]
+- Prefer caches for hot paths and pagination for heavy queries. Warn if n+1 queries detected.

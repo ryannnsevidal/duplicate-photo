@@ -1,20 +1,63 @@
-# Node
-node_modules/
-dist/
+# Dependencies
+node_modules
+.pnp
+.pnp.js
 
-# Env / secrets
-.env
-.env.*
+# Production
+dist
+build
+.next
+out
 
-# Tests / reports
-coverage/
-playwright-report/
-test-results/
+# Testing
+coverage
+*.lcov
+.nyc_output
+test-results
+playwright-report
+playwright/.cache
+
+# Caching
+.turbo
+.nx
+.cache
+*.tsbuildinfo
 
 # Misc
 .DS_Store
-.turbo/
-.cache/
+*.pem
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Large binaries (avoid committing)
-# pix-dupe-detect-ready.zip  # KEEP OUT OF GIT. Use Releases or LFS instead.
+# Environment
+.env
+.env*.local
+.env.development
+.env.test
+.env.production
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+
+# Storybook
+storybook-static
+
+# Temporary
+tmp
+temp
+.tmp

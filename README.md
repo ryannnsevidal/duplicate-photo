@@ -1,81 +1,163 @@
-# Duplicate Photo Detector
+# Monorepo - Battle-tested Context Engineering for Cursor
 
-A production-oriented project for detecting duplicate and similar photos with safe-delete (quarantine) workflow.
+A production-ready monorepo setup with comprehensive testing, type safety, and AI-assisted development.
 
-## Quickstart
+## 🚀 Quick Start
 
-- Web UI (static app):
-  - Prereqs: Node 20+
-  - Install and run in the UI app:
-    - `cd pix-dupe-detect-main`
-    - `npm ci`
-    - `npm run dev`
-  - Open: http://localhost:5173
+```bash
+# Install dependencies
+pnpm install
 
-- Worker/CLI (scanning, hashing) [alpha]:
-  - Prereqs: Node 20+, Postgres (DATABASE_URL)
-  - Copy `.env.example` to `.env` and set values
-  - Install root deps: `npm ci`
-  - Run migrations: `npm run migrate`
+# Generate types from OpenAPI
+pnpm gen:types
 
-## CLI (alpha)
+# Start development
+pnpm dev
+```
 
-The CLI will support these commands:
+## 📁 Project Structure
 
-- `dupe scan <path> [--concurrency 8] [--ext jpg,png,heic]`
-- `dupe groups [--threshold 8] [--algo phash]`
-- `dupe resolve --policy keep-highest-res`
-- `dupe trash --restore --empty`
+```
+.
+├── apps/                 # Deployable applications
+│   ├── web/             # Next.js frontend (port 3000)
+│   ├── api/             # Fastify backend (port 3001)
+│   └── workers/         # Background job processors
+├── packages/            # Shared packages
+│   ├── config/          # Shared configurations
+│   ├── ui/              # UI component library
+│   ├── core/            # Business logic (pure functions)
+│   ├── types/           # TypeScript types & API client
+│   └── testing/         # Test utilities & factories
+├── docs/                # Documentation
+│   ├── adr/            # Architecture Decision Records
+│   ├── guides/         # How-to guides
+│   └── reference/      # API reference (OpenAPI)
+└── .cursorrules        # AI assistant configuration
+```
 
-Status: commands are being implemented; see `scripts/` and `worker/` directories for the current logic and stubs.
+## 🧪 Testing Strategy
 
-## Safety: Quarantine, not delete
+### Test Pyramid
+- **Unit Tests (70%)**: Fast, focused tests for business logic
+- **Integration Tests (20%)**: API endpoints with real databases
+- **E2E Tests (10%)**: Critical user journeys
 
-- Delete actions move files to a `TRASH_DIR` (quarantine) within the configured root.
-- Restores are supported within a retention period. No hard-deletes by default.
+### Running Tests
+```bash
+pnpm test              # Run all tests
+pnpm test:unit         # Unit tests only
+pnpm test:int          # Integration tests
+pnpm test:e2e          # End-to-end tests
+pnpm test:watch        # Watch mode
+```
 
-## Environment variables
+## 🤖 AI-Powered Development
 
-Configure locally via `.env` (dotenv). On Render, configure these as service environment variables.
+This repo is optimized for Cursor with context engineering:
 
-- `DATABASE_URL`
-- `DUPE_ROOT` (root directory allowed for scanning)
-- `UPLOAD_DIR`
-- `THUMBNAIL_DIR`
-- `QUEUE_URL` (optional if using a queue)
-- `MAX_CONCURRENCY` (default 8)
-- `HASH_ALGO` (default `phash`)
-- `SIMILARITY_THRESHOLD` (default 8)
+### Cursor Rules (`.cursorrules`)
+- Enforces test-first development
+- Maintains API contracts
+- Generates documentation
+- Ensures type safety
 
-See `.env.example` for the full list.
+### Prompt Templates (`.cursor-prompts/`)
+- `feature.md` - Structured feature development
+- `test-first.md` - TDD workflow
+- `refactor-safe.md` - Safe refactoring with tests
 
-## Database
+### Usage Example
+1. Open Cursor
+2. Use prompt: `.cursor-prompts/feature.md`
+3. Fill in the template variables
+4. Let Cursor generate tests and implementation
 
-- Postgres schema and migrations live in `migrations/`
-- Apply with `npm run migrate`
-- Seed data (optional) with `npm run seed`
+## 🔧 Development
 
-## Development
+### Environment Setup
+```bash
+# Copy environment files
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 
-- Formatting: `npm run format`
-- Linting: `npm run lint`
-- Typecheck: `npm run type-check`
-- Unit tests: `npm run test`
-- E2E tests (web UI):
-  - `cd pix-dupe-detect-main`
-  - `npm run test:e2e`
+# Start required services
+docker-compose -f docker-compose.test.yml up -d
+```
 
-## Render deployment
+### Common Commands
+```bash
+pnpm dev               # Start all apps in dev mode
+pnpm build             # Build all packages
+pnpm lint              # Lint code
+pnpm typecheck         # Type checking
+pnpm format            # Format code
+pnpm ci                # Run all checks (CI)
+```
 
-- See `render.yaml` for services:
-  - Web (static) service for the UI under `pix-dupe-detect-main`
-  - Worker service (optional) for background scanning
-- CI deploy workflow triggers on version tags. Configure `RENDER_DEPLOY_HOOK_URL` secret in GitHub.
+### Adding Dependencies
+```bash
+# Add to specific workspace
+pnpm add --filter @app/web package-name
 
-## Large files policy
+# Add dev dependency to root
+pnpm add -D -w package-name
+```
 
-- Large binaries should not be committed. Use Git LFS or GitHub Releases. Removed: `pix-dupe-detect-ready.zip`.
+## 📝 API Development
 
-## License
+### OpenAPI Workflow
+1. Edit `/docs/reference/openapi.yaml`
+2. Generate types: `pnpm gen:types`
+3. Implement endpoints with type safety
+4. Types automatically flow to frontend
 
-MIT. See `LICENSE`.
+### Type-Safe API Client
+```typescript
+import { createApiClient } from '@repo/types'
+
+const api = createApiClient('http://localhost:3001')
+const users = await api.listUsers({ page: 1 }, token)
+```
+
+## 🚢 CI/CD
+
+GitHub Actions workflow includes:
+- ✅ Linting & formatting
+- ✅ Type checking
+- ✅ Unit & integration tests
+- ✅ E2E tests
+- ✅ Security scanning
+- ✅ Automated releases
+
+## 📚 Documentation
+
+- **[Getting Started](./docs/guides/getting-started.md)** - Setup guide
+- **[Testing Guide](./docs/guides/testing.md)** - Testing patterns
+- **[Contributing](./CONTRIBUTING.md)** - Contribution guidelines
+- **[Architecture](./docs/adr/)** - Design decisions
+
+## 🏗️ Architecture Decisions
+
+Key decisions documented in `/docs/adr/`:
+- Monorepo with pnpm workspaces
+- Turborepo for build orchestration
+- Vitest for testing
+- OpenAPI for API contracts
+- Testcontainers for integration tests
+
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
+- Code standards
+- Commit conventions
+- PR process
+- Testing requirements
+
+## 📄 License
+
+MIT
+
+---
+
+Built with ❤️ for efficient, AI-assisted development.

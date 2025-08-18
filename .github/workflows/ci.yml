@@ -2,74 +2,197 @@ name: CI
 
 on:
   pull_request:
+    branches: [main, develop]
   push:
-    branches: [main]
+    branches: [main, develop]
+
+env:
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
 jobs:
-  build-and-test:
+  build-test:
+    name: Build and Test
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    timeout-minutes: 30
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-      - name: Setup Node
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
+          cache: 'pnpm'
 
-      - name: Install root dependencies
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm i --package-lock-only && npm ci; fi
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Lint (root)
-        run: npm run lint --if-present
+      - name: Generate types
+        run: pnpm gen:types
 
-      - name: Typecheck (root)
-        run: npm run type-check --if-present
+      - name: Lint
+        run: pnpm lint
 
-      - name: Unit tests (root)
-        run: npm run test --if-present
+      - name: Type check
+        run: pnpm typecheck
 
-      - name: Install UI dependencies
-        working-directory: pix-dupe-detect-main
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm i --package-lock-only && npm ci; fi
-
-      - name: Lint (UI)
-        working-directory: pix-dupe-detect-main
-        continue-on-error: true
-        run: |
-          npm run lint --if-present || echo "::warning::UI lint failed (non-blocking)"
-
-      - name: Typecheck (UI)
-        working-directory: pix-dupe-detect-main
-        run: npm run -s build --dry-run || true
-
-      - name: Install Playwright Browsers (UI)
-        working-directory: pix-dupe-detect-main
-        continue-on-error: true
-        run: |
-          npx playwright install --with-deps || echo "::warning::Playwright browser install failed (non-blocking)"
-
-      - name: Unit tests (UI)
-        working-directory: pix-dupe-detect-main
-        continue-on-error: true
-        run: |
-          npm run test --if-present || echo "::warning::UI unit tests failed (non-blocking)"
-
-      - name: E2E tests (UI)
-        working-directory: pix-dupe-detect-main
+      - name: Run unit tests
+        run: pnpm test:unit
         env:
-          CI: true
-        continue-on-error: true
-        run: |
-          npm run e2e --if-present || echo "::warning::UI E2E tests failed (non-blocking)"
+          NODE_ENV: test
+
+      - name: Run integration tests
+        run: pnpm test:int
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgres://test:test@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+
+      - name: Build
+        run: pnpm build
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: success() || failure()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build-test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm playwright install --with-deps
+
+      - name: Build
+        run: pnpm build
+
+      - name: Run E2E tests
+        run: pnpm test:e2e
+        env:
+          NODE_ENV: test
 
       - name: Upload Playwright report
-        if: always()
         uses: actions/upload-artifact@v4
+        if: failure()
         with:
           name: playwright-report
-          path: pix-dupe-detect-main/playwright-report
-          if-no-files-found: ignore
+          path: playwright-report/
+          retention-days: 30
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [build-test, e2e]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: pnpm release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
