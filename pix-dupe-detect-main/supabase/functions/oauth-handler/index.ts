@@ -24,7 +24,12 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
     );
 
     // Verify JWT and get user
@@ -94,7 +99,7 @@ serve(async (req) => {
 });
 
 async function generateAuthUrl(provider: string, redirectUri?: string): Promise<string> {
-  const baseRedirectUri = redirectUri || 'https://your-app.onrender.com/oauth-callback';
+  const baseRedirectUri = redirectUri || 'https://pix-dupe-detect-ui.onrender.com/oauth-callback';
   
   switch (provider) {
     case 'google':
