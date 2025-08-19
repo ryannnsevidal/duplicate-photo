@@ -20,6 +20,7 @@ import { AdminAuditPanel } from '@/pages/AdminAuditPanel';
 import { SessionsPage } from '@/pages/admin/SessionsPage';
 import NotFound from '@/pages/NotFound';
 import HealthCheck from '@/pages/HealthCheck';
+import { AuthTest } from '@/pages/AuthTest';
 import { useAuth } from '@/hooks/useAuth';
 import { useSecurity } from '@/hooks/useSecurity';
 import { useToast } from '@/hooks/use-toast';
@@ -303,6 +304,7 @@ export function AppRouter() {
             </AdminRoute>
           } />
           <Route path="/health" element={<HealthCheck />} />
+          <Route path="/auth-test" element={<AuthTest />} />
           <Route path="/logout" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
