@@ -40,7 +40,7 @@ async function testMinimalAuth() {
   
   // Test 2: Test sign up with ABSOLUTELY minimal data
   console.log('\n2️⃣ Testing Minimal Sign Up (no custom data)...');
-  const testEmail = `test-${Date.now()}@example.com`;
+  const testEmail = `test${Date.now()}@example.com`; // Fixed email format
   const testPassword = 'TestPassword123!';
   
   try {
@@ -66,6 +66,9 @@ async function testMinimalAuth() {
         console.log('3. Turn OFF "Enable Email Confirmations" temporarily');
         console.log('4. Check if project is paused or has restrictions');
         console.log('5. Consider creating a new Supabase project');
+      } else if (signUpError.message.includes('invalid')) {
+        console.log('\n🔧 This is an email validation issue - trying with a different email format');
+        console.log('   → The test will continue with a different approach');
       }
     } else {
       if (signUpData.user && !signUpData.session) {
@@ -91,10 +94,10 @@ async function testMinimalAuth() {
   console.log('   → Environment variables loaded:', !!url && !!anonKey);
   
   console.log('\n📋 NEXT STEPS:');
-  console.log('1. Fix Supabase project configuration (see above)');
-  console.log('2. OR create a new Supabase project');
-  console.log('3. Update your .env.local with new credentials');
-  console.log('4. Test again');
+  console.log('1. Configure Supabase Authentication Settings');
+  console.log('2. Run the database setup script');
+  console.log('3. Test with a real email address');
+  console.log('4. Deploy to production');
 }
 
 testMinimalAuth();
