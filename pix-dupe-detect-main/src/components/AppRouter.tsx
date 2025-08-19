@@ -109,7 +109,7 @@ export function AppRouter() {
       const timeout = setTimeout(() => {
         console.warn('⏰ Loading timeout reached, forcing auth resolution');
         setLoadingTimeout(true);
-      }, 10000); // 10 second timeout
+      }, 15000); // Increased to 15 second timeout for better network tolerance
 
       return () => clearTimeout(timeout);
     } else {

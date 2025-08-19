@@ -16,7 +16,6 @@ export function useAuth() {
   const initialized = useRef(false);
   const mountedRef = useRef(true);
 
-
   useEffect(() => {
     // Prevent multiple initializations using ref instead of global
     if (initialized.current) return;
@@ -31,12 +30,13 @@ export function useAuth() {
         
         console.log('🔄 Auth state change:', event, session?.user?.email);
         
-        // Synchronous state updates only
+        // Synchronous state updates only - this is critical for performance
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        setInitializing(false);
         
-        // Defer any async operations to avoid blocking
+        // Defer any async operations to avoid blocking the auth state
         if (session?.user?.id && event === 'SIGNED_IN') {
           // Skip session security init during E2E tests
           if (!import.meta.env.VITE_E2E) {
@@ -48,19 +48,29 @@ export function useAuth() {
                 console.warn('Session security init error (non-blocking):', error);
                 // Don't fail the sign-in process for security init errors
               }
-            }, 2000); // Delay to avoid conflicts with sign-in flow
+            }, 1000); // Reduced delay to 1 second
           }
         }
       }
     );
 
-    // Check for existing session AFTER setting up listener
+    // Check for existing session AFTER setting up listener with timeout
     const checkSession = async () => {
       if (!mountedRef.current) return;
       
       try {
         console.log('🔍 Checking for existing session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        // Add timeout to prevent hanging
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session check timeout')), 5000)
+        );
+        
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
         
         if (!mountedRef.current) return; // Double-check mount status
         
@@ -78,18 +88,22 @@ export function useAuth() {
           setSession(null);
           setUser(null);
           setLoading(false);
+          setInitializing(false);
         } else if (!session) {
           // No session found - user needs to log in
           console.log('⚠️ No active session found - user needs to authenticate');
           setSession(null);
           setUser(null);
           setLoading(false);
+          setInitializing(false);
           console.log('🔓 Loading set to false - should show signin page');
         } else {
           // Valid session found
           console.log('✅ Valid session found, restoring user state for:', session.user.email);
           setSession(session);
           setUser(session.user);
+          setLoading(false);
+          setInitializing(false);
           
           // Initialize session security for existing session (non-blocking)
           if (!import.meta.env.VITE_E2E) {
@@ -100,61 +114,30 @@ export function useAuth() {
                   await initializeSessionSecurity(session.user.id);
                 } catch (error) {
                   console.warn('Session security init error (non-blocking):', error);
-                  // Don't fail the session restore for security init errors
                 }
               }
-            }, 1000);
+            }, 1000); // Reduced delay to 1 second
           }
-          
-          // Defer session refresh check to avoid blocking auth flow
-          setTimeout(async () => {
-            if (!mountedRef.current) return;
-            
-            const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
-            const now = Date.now();
-            const fiveMinutes = 5 * 60 * 1000;
-            
-            if (expiresAt - now < fiveMinutes && !sessionStorage.getItem('session_refresh_attempted')) {
-              sessionStorage.setItem('session_refresh_attempted', 'true');
-              try {
-                const { error: refreshError } = await supabase.auth.refreshSession();
-                if (refreshError) {
-                  sessionStorage.removeItem('session_refresh_attempted');
-                }
-              } catch (error) {
-                sessionStorage.removeItem('session_refresh_attempted');
-              }
-            }
-          }, 2000);
-          
-          setLoading(false);
         }
       } catch (error) {
-        if (!mountedRef.current) return;
-        console.error('❌ Session check failed:', error);
+        console.error('❌ Session check exception:', error);
+        // Fallback to unauthenticated state
         setSession(null);
         setUser(null);
         setLoading(false);
+        setInitializing(false);
       }
     };
 
-    // Check immediately
+    // Start session check immediately
     checkSession();
-    
-    // Add a second check for OAuth flows which might need extra time
-    const delayedCheck = setTimeout(() => {
-      if (mountedRef.current && loading) {
-        console.log('🔄 Performing delayed session check...');
-        checkSession();
-      }
-    }, 1000);
 
+    // Cleanup function
     return () => {
       mountedRef.current = false;
-      subscription.unsubscribe();
-      clearTimeout(delayedCheck);
+      subscription?.unsubscribe();
     };
-  }, []); // Empty dependency array to run only once
+  }, [toast, initializeSessionSecurity]);
 
   // Cleanup on unmount
   useEffect(() => {

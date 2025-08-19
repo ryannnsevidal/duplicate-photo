@@ -18,6 +18,8 @@ if (feature && typeof url === 'string' && url.startsWith('http') && typeof anon 
         detectSessionInUrl: true,
         storage: localStorage,
         flowType: 'pkce',
+        // Optimize auth state change handling
+        debug: false, // Disable debug logs in production
       },
       global: {
         headers: {
@@ -30,7 +32,7 @@ if (feature && typeof url === 'string' && url.startsWith('http') && typeof anon 
     const connectionTest = Promise.race([
       client.auth.getSession(),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timeout')), 5000)
+        setTimeout(() => reject(new Error('Connection timeout')), 8000) // Increased timeout
       )
     ]);
     
