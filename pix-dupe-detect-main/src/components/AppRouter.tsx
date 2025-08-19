@@ -52,14 +52,23 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
+        // Use the new is_admin function for better performance
+        const { data, error } = await supabase.rpc('is_admin', { user_uuid: user.id });
+        
+        if (error) {
+          console.error('Error checking admin role:', error);
+          // Fallback to direct query
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
 
-        setIsAdmin(!!data && !error);
+          setIsAdmin(!!fallbackData && !fallbackError);
+        } else {
+          setIsAdmin(!!data);
+        }
       } catch (error) {
         console.error('Error checking admin role:', error);
         setIsAdmin(false);

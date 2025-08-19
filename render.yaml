@@ -1,7 +1,46 @@
 services:
+  - type: static
+    name: pix-dupe-detect-ui
+    rootDir: pix-dupe-detect-main
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VITE_FEATURE_SUPABASE
+        value: "true"
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: VITE_APP_NAME
+        value: "PixDupe Pro"
+      - key: VITE_APP_ENVIRONMENT
+        value: "production"
+    routes:
+      - type: rewrite
+        source: "/*"
+        destination: "/index.html"
+    headers:
+      - path: "/*"
+        name: "X-Content-Type-Options"
+        value: "nosniff"
+      - path: "/*"
+        name: "X-Frame-Options"
+        value: "DENY"
+      - path: "/*"
+        name: "X-XSS-Protection"
+        value: "1; mode=block"
+      - path: "/*"
+        name: "Strict-Transport-Security"
+        value: "max-age=31536000; includeSubDomains"
+      - path: "/*"
+        name: "Referrer-Policy"
+        value: "strict-origin-when-cross-origin"
+
   - type: web
     name: pix-dupe-detect-api
-    env: node
+    runtime: node
     buildCommand: npm ci && npm run build
     startCommand: node dist/api/server.js
     envVars:
@@ -21,44 +60,12 @@ services:
         value: "8"
       - key: CONCURRENCY
         value: "8"
-      - key: VITE_SUPABASE_URL
+      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: VITE_SUPABASE_ANON_KEY
-        sync: false
-      - key: VITE_APP_NAME
-        value: "PIX DUPE DETECT"
-      - key: VITE_APP_ENVIRONMENT
-        value: "production"
-      - key: VITE_MAX_FILE_SIZE
-        value: "10485760"
-      - key: VITE_ALLOWED_FILE_TYPES
-        value: "image/jpeg,image/png,image/gif,image/webp"
-
-    routes:
-      - type: rewrite
-        source: "/*"
-        destination: "/index.html"
-
-    headers:
-      - path: "/*"
-        name: "X-Content-Type-Options"
-        value: "nosniff"
-      - path: "/*"
-        name: "X-Frame-Options"
-        value: "DENY"
-      - path: "/*"
-        name: "X-XSS-Protection"
-        value: "1; mode=block"
-      - path: "/*"
-        name: "Strict-Transport-Security"
-        value: "max-age=31536000; includeSubDomains"
-      - path: "/*"
-        name: "Referrer-Policy"
-        value: "strict-origin-when-cross-origin"
 
   - type: worker
     name: dupe-scanner-worker
-    env: node
+    runtime: node
     buildCommand: npm ci && npm run build
     startCommand: node dist/worker/index.js
     envVars:
